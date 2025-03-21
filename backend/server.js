@@ -14,7 +14,6 @@ const JWT_SECRET = "your-secret-key";
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static("uploads"));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ✅ ตั้งค่าการอัปโหลดไฟล์ (Multer)
@@ -199,18 +198,29 @@ app.get("/api/admin/dashboard", authenticateToken, (req, res) => {
     );
 });
 
-// ✅ ดึงข้อมูลห้องพักตาม ID
+// ✅ API ดึงข้อมูลห้องพักตาม id (อัปเดตล่าสุดและถูกต้องที่สุด)
 app.get("/api/rooms/:id", (req, res) => {
-    const roomId = req.params.id;
-    db.get("SELECT * FROM rooms WHERE id = ?", [roomId], (err, row) => {
-        if (err) return res.status(500).json({ error: "เกิดข้อผิดพลาดในการโหลดข้อมูล" });
-        if (!row) return res.status(404).json({ error: "ไม่พบข้อมูลห้องพัก" });
+    const { id } = req.params;
 
-        // แปลง JSON String เป็น Array (รูปภาพ, สิ่งอำนวยความสะดวก)
-        row.images = row.images ? JSON.parse(row.images) : [];
-        row.facilities = row.facilities ? JSON.parse(row.facilities) : [];
+    db.get("SELECT * FROM rooms WHERE id = ?", [id], (err, room) => {
+        if (err) {
+            console.error("❌ ไม่สามารถดึงข้อมูลห้องได้:", err);
+            return res.status(500).json({ error: "❌ ไม่สามารถดึงข้อมูลห้องได้" });
+        }
+        if (!room) {
+            return res.status(404).json({ error: "❌ ไม่พบห้องที่ต้องการ" });
+        }
 
-        res.json(row);
+        room.images = room.images ? JSON.parse(room.images) : [];
+        room.facilities = room.facilities ? JSON.parse(room.facilities) : [];
+
+        room.cover_image = room.cover_image
+            ? `http://localhost:3001/uploads/${room.cover_image}`
+            : null;
+
+        room.images = room.images.map(img => `http://localhost:3001/uploads/${img}`);
+
+        res.json(room);
     });
 });
 

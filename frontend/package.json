@@ -12,7 +12,9 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@fontsource/prompt": "^5.2.5",
     "@fortawesome/fontawesome-free": "^6.7.2",
+    "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
     "@mui/icons-material": "^6.4.7",
     "@mui/material": "^6.4.7",
@@ -22,6 +24,7 @@
     "bootstrap-icons": "^1.11.3",
     "chart.js": "^4.4.8",
     "jquery": "^3.7.1",
+    "lucide-react": "^0.483.0",
     "react": "^19.0.0",
     "react-bootstrap": "^2.10.9",
     "react-chartjs-2": "^5.3.0",
@@ -29,7 +32,7 @@
     "react-google-charts": "^5.2.1",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.3.0",
-    "swiper": "^11.2.5"
+    "swiper": "^11.2.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
