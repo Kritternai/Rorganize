@@ -1,0 +1,19 @@
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #f8f9fa;
+}
+
+.navbar {
+  padding: 15px 0;
+}
+
+.carousel img {
+  height: 500px;
+  object-fit: cover;
+}
+
+.footer {
+  background-color: #212529;
+  color: #ffffff;
+  padding: 20px 0;
+}

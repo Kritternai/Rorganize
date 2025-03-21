@@ -1,0 +1,94 @@
+/* ✅ ตั้งค่าหน้า RoomsPage */
+.room-page {
+    background-color: #f8f9fa; /* ✅ พื้นหลังสีเทาอ่อน */
+    min-height: 100vh;
+  }
+  
+  /* ✅ ตั้งค่า Header */
+  .header-area {
+    background: #ffffff;
+    padding: 15px 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .header-area .logo {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .header-area .nav {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+  }
+  
+  .header-area .nav a {
+    font-size: 1rem;
+    color: #333;
+    text-decoration: none;
+    transition: all 0.3s ease;
+  }
+  
+  .header-area .nav a:hover {
+    color: #e63946;
+  }
+  
+  /* ✅ ตั้งค่า Banner */
+  .banner-room {
+    background: url("/images/room-banner.jpg") center/cover no-repeat;
+    height: 250px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  
+  /* ✅ การ์ดห้องพัก */
+  .room-card {
+    border-radius: 12px;
+    transition: transform 0.3s ease-in-out;
+    background: #fff;
+  }
+  
+  .room-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  /* ✅ รูปภาพหลัก */
+  .room-image img {
+    height: 220px;
+    object-fit: cover;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+  }
+  
+  /* ✅ รายละเอียดห้อง */
+  .room-title {
+    font-size: 1.25rem;
+    color: #333;
+  }
+  
+  .room-price {
+    font-size: 1.2rem;
+    color: #e63946;
+  }
+  
+  /* ✅ Thumbnail รูปเพิ่มเติม */
+  .thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+  }
+  
+  /* ✅ ปรับ Responsive */
+  @media (max-width: 768px) {
+    .header-area .nav {
+      flex-direction: column;
+      gap: 10px;
+    }
+  
+    .banner-room {
+      height: 200px;
+    }
+  }

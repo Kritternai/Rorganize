@@ -1,0 +1,13 @@
+body {
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  .carousel img {
+    height: 500px;
+    object-fit: cover;
+  }
+  
+  .video-section iframe {
+    width: 100%;
+    max-width: 800px;
+  }

@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap');
+
+body {
+  font-family: 'Prompt', sans-serif;
+  background-color: #f8f9fa;
+}
+
+/* 🔹 Card */
+.card {
+  border-radius: 10px;
+}
+
+/* 🔹 รูปภาพหลัก */
+.main-image {
+  width: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+/* 🔹 Thumbnail รูปภาพห้อง */
+.thumbnail-container {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.thumbnail {
+  width: 80px;
+  height: 80px;
+  border-radius: 5px;
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+}
+
+.thumbnail:hover {
+  transform: scale(1.1);
+}
+
+/* 🔹 ปุ่ม */
+.btn {
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 1.1rem;
+}

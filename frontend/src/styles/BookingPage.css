@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap');
+
+body {
+  font-family: 'Prompt', sans-serif;
+  background-color: #f8f9fa;
+}
+
+/* 🔹 Card Styling */
+.card {
+  border-radius: 10px;
+  padding: 20px;
+}
+
+/* 🔹 รูปภาพ */
+img {
+  width: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+/* 🔹 ปุ่ม */
+.btn {
+  font-size: 1.2rem;
+  padding: 12px;
+  border-radius: 8px;
+}
