@@ -23,7 +23,9 @@ import PaymentsPage from "./components/PaymentsPage";
 import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
 import AddRoom from "./components/AddRoom";
-import RoomListStatus from "./components/RoomListStatus"; // Uncomment and update if needed
+import RoomListStatus from "./components/RoomListStatus"; 
+import AdminBookingList from "./components/AdminBookingList";
+// Uncomment and update if needed
 //import RoomListStatus from "./components/RoomListStatus";
 
 function App() {
@@ -65,6 +67,7 @@ function App() {
     <Route path="/admin" element={<AdminDashboard token={adminToken} />} />
     <Route path="/admin/add-room" element={<AddRoom token={adminToken} />} />
     <Route path="/admin/room-status" element={<RoomListStatus token={adminToken} />} />
+    <Route path="/admin/bookings" element={<AdminBookingList token={adminToken} />} />
   </Routes>
 </Router>
   );

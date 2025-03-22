@@ -16,6 +16,7 @@ import "swiper/css/pagination";
 import "swiper/css/effect-fade";
 import '@fontsource/prompt';
 
+
 const RoomDetail = () => {
   const { id } = useParams();
   const [room, setRoom] = useState(null);
@@ -24,7 +25,40 @@ const RoomDetail = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  
+  const [isOpenBooking, setIsOpenBooking] = useState(false);
+
+const [booking, setBooking] = useState({
+  name: "",
+  phone: "",
+  email: "",
+  check_in_date: "",
+  duration: "",
+  special_requests: ""
+});
+
+// ✅ ฟังก์ชันยืนยันการจอง
+const handleBookingSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!room?.id) {
+    alert("ไม่พบข้อมูลห้อง");
+    return;
+  }
+
+  try {
+    const response = await axios.post("http://localhost:3001/api/bookings", {
+      room_id: room.id,
+      ...booking,
+    });
+
+    alert("✅ จองห้องเรียบร้อยแล้ว!");
+    setIsOpenBooking(false);
+  } catch (err) {
+    console.error("❌ Booking error:", err.response?.data || err.message);
+    alert("❌ ไม่สามารถจองห้องได้");
+  }
+};
+
   // เพิ่มรูปภาพ fallback
   const fallbackImage = "/assets/placeholder-room.jpg"; // ปรับตาม path ที่ถูกต้องในโปรเจคของคุณ
 
@@ -310,17 +344,18 @@ const RoomDetail = () => {
               </div>
             )}
 
-            <div className="space-y-4 pt-4">
-              <Link 
-                to={room.status === 'available' ? "/booking" : "#"} 
-                className={`block text-center py-4 rounded-xl font-medium text-lg transition transform hover:-translate-y-1 duration-300 ${
+<div className="space-y-4 pt-4">
+              <button
+                onClick={() => setIsOpenBooking(true)}
+                disabled={room.status !== 'available'}
+                className={`block w-full text-center py-4 rounded-xl font-medium text-lg transition transform hover:-translate-y-1 duration-300 ${
                   room.status === 'available' 
                     ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl' 
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
                 {room.status === 'available' ? 'จองห้องพักนี้' : 'ห้องพักนี้ไม่ว่าง'}
-              </Link>
+              </button>
               <Link 
                 to="/rooms" 
                 className="block border border-gray-300 text-center py-4 rounded-xl hover:bg-gray-50 transition text-gray-700 font-medium"
@@ -379,6 +414,118 @@ const RoomDetail = () => {
           </div>
         </Dialog>
       </Transition>
+      <Transition show={isOpenBooking} as={Fragment}>
+  <Dialog onClose={() => setIsOpenBooking(false)} className="relative z-50">
+    <Transition.Child
+      as={Fragment}
+      enter="ease-out duration-300"
+      enterFrom="opacity-0"
+      enterTo="opacity-100"
+      leave="ease-in duration-200"
+      leaveFrom="opacity-100"
+      leaveTo="opacity-0"
+    >
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
+    </Transition.Child>
+
+    <div className="fixed inset-0 flex items-center justify-center p-4">
+      <Transition.Child
+        as={Fragment}
+        enter="ease-out duration-300"
+        enterFrom="opacity-0 scale-95"
+        enterTo="opacity-100 scale-100"
+        leave="ease-in duration-200"
+        leaveFrom="opacity-100 scale-100"
+        leaveTo="opacity-0 scale-95"
+      >
+        <Dialog.Panel className="w-full max-w-xl bg-white rounded-xl p-6 shadow-xl space-y-6">
+          <Dialog.Title className="text-xl font-bold text-blue-700">
+            📋 จองห้อง {room.room_number}
+          </Dialog.Title>
+
+          {/* ✅ จองห้อง */}
+          <form onSubmit={handleBookingSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">ชื่อ - นามสกุล</label>
+              <input
+                type="text"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                value={booking.name}
+                onChange={(e) => setBooking({ ...booking, name: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">อีเมล</label>
+                <input
+                  type="email"
+                  value={booking.email}
+                  onChange={(e) => setBooking({ ...booking, email: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">เบอร์โทร</label>
+                <input
+                  type="tel"
+                  value={booking.phone}
+                  onChange={(e) => setBooking({ ...booking, phone: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">วันที่ต้องการเข้าพัก</label>
+              <input
+                type="date"
+                value={booking.check_in_date}
+                onChange={(e) => setBooking({ ...booking, check_in_date: e.target.value })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">ระยะเวลาเข้าพัก (เดือน)</label>
+              <input
+                type="number"
+                min="1"
+                value={booking.duration}
+                onChange={(e) => setBooking({ ...booking, duration: e.target.value })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">คำขอเพิ่มเติม (ถ้ามี)</label>
+              <textarea
+                rows="3"
+                value={booking.special_requests}
+                onChange={(e) => setBooking({ ...booking, special_requests: e.target.value })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button type="button" onClick={() => setIsOpenBooking(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
+                ยกเลิก
+              </button>
+              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                ยืนยันการจอง
+              </button>
+            </div>
+          </form>
+        </Dialog.Panel>
+      </Transition.Child>
+    </div>
+  </Dialog>
+</Transition>
     </div>
   );
 };

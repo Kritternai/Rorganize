@@ -160,26 +160,39 @@ app.get("/api/notifications", authenticateToken, (req, res) => {
     });
 });
 
-// ✅ API จองห้องพัก
 app.post("/api/bookings", (req, res) => {
-    const { room_id, fullname, phone, email, start_date, note } = req.body;
-
-    if (!room_id || !fullname || !phone || !start_date) {
-        return res.status(400).json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" });
-    }
-
-    const sql = `
-        INSERT INTO contracts (room_id, fullname, phone, email, start_date, note, status)
-        VALUES (?, ?, ?, ?, ?, ?, 'reserved')
-    `;
-
-    db.run(sql, [room_id, fullname, phone, email, start_date, note], function (err) {
-        if (err) {
-            return res.status(500).json({ error: "เกิดข้อผิดพลาดในการจองห้องพัก" });
+    console.log("📥 Booking Request Received:", req.body);
+    const {
+      room_id, name, phone, email,
+      check_in_date, duration, special_requests
+    } = req.body;
+  
+    db.get("SELECT status FROM rooms WHERE id = ?", [room_id], (err, room) => {
+      if (err || !room) {
+        return res.status(404).json({ error: "ไม่พบห้องพัก" });
+      }
+  
+      if (room.status !== "available") {
+        return res.status(400).json({ error: "ห้องนี้ไม่พร้อมให้จอง" });
+      }
+  
+      db.run(`
+        INSERT INTO bookings (room_id, name, phone, email, check_in_date, duration, special_requests)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [room_id, name, phone, email, check_in_date, duration, special_requests],
+        function (err) {
+          if (err) {
+            return res.status(500).json({ error: "ไม่สามารถจองห้องได้" });
+          }
+  
+          // อัพเดตสถานะห้อง
+          db.run("UPDATE rooms SET status = 'reserved' WHERE id = ?", [room_id]);
+  
+          return res.json({ message: "จองห้องเรียบร้อย", booking_id: this.lastID });
         }
-        res.status(201).json({ message: "✅ การจองสำเร็จ!", booking_id: this.lastID });
+      );
     });
-});
+  });
 
 app.get("/api/admin/dashboard", authenticateToken, (req, res) => {
     if (req.user.role !== "admin") return res.status(403).json({ error: "Unauthorized" });
@@ -215,7 +228,7 @@ app.get("/api/rooms/:id", (req, res) => {
         room.facilities = room.facilities ? JSON.parse(room.facilities) : [];
 
         room.cover_image = room.cover_image
-            ? `http://localhost:3001/uploads/${room.cover_image}`
+            ? `http://localhost:999/uploads/${room.cover_image}`
             : null;
 
         room.images = room.images.map(img => `http://localhost:3001/uploads/${img}`);
@@ -250,6 +263,23 @@ app.get("/api/rooms/:id", (req, res) => {
         res.json(room);
     });
 });
+
+// ✅ ดึงข้อมูลการจอง(Admin)
+app.get("/api/bookings", (req, res) => {
+    db.all(`
+      SELECT 
+        b.*, 
+        r.room_number, r.type, r.floor, r.size, r.rent_price 
+      FROM bookings b
+      LEFT JOIN rooms r ON b.room_id = r.id
+      ORDER BY b.created_at DESC
+    `, (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: "ไม่สามารถดึงข้อมูลการจองได้" });
+      }
+      res.json(rows);
+    });
+  });
 
 // ✅ Start Server
 app.listen(port, () => {
