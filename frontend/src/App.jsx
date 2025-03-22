@@ -23,6 +23,8 @@ import PaymentsPage from "./components/PaymentsPage";
 import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
 import AddRoom from "./components/AddRoom";
+import RoomListStatus from "./components/RoomListStatus"; // Uncomment and update if needed
+//import RoomListStatus from "./components/RoomListStatus";
 
 function App() {
   // ✅ เก็บ Token ของ Admin ใน localStorage
@@ -49,21 +51,22 @@ function App() {
   };
 
   return (
-    <Router>
-      {/* 🔹 Full Screen HomePage */}
-      <Routes>
-        <Route path="/" element={<HomePage rooms={rooms} />} />
-        <Route path="/rooms" element={<RoomsPage rooms={rooms} />} />
-        <Route path="/rooms/:id" element={<RoomDetail />} />
-        <Route path="/booking" element={<BookingPage />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/tenants" element={<TenantsPage />} />
-        <Route path="/payments" element={<PaymentsPage />} />
-        <Route path="/login" element={<AdminLogin onLogin={handleLogin} />} />
-        <Route path="/admin" element={<AdminDashboard token={adminToken} />} />
-        <Route path="/add-room" element={<AddRoom token={adminToken} />} />
-      </Routes>
-    </Router>
+<Router>
+  {/* 🔹 Full Screen HomePage */}
+  <Routes>
+    <Route path="/" element={<HomePage rooms={rooms} />} />
+    <Route path="/rooms" element={<RoomsPage rooms={rooms} />} />
+    <Route path="/rooms/:id" element={<RoomDetail />} />
+    <Route path="/booking" element={<BookingPage />} />
+    <Route path="/contact" element={<ContactPage />} />
+    <Route path="/tenants" element={<TenantsPage />} />
+    <Route path="/payments" element={<PaymentsPage />} />
+    <Route path="/login" element={<AdminLogin onLogin={handleLogin} />} />
+    <Route path="/admin" element={<AdminDashboard token={adminToken} />} />
+    <Route path="/admin/add-room" element={<AddRoom token={adminToken} />} />
+    <Route path="/admin/room-status" element={<RoomListStatus token={adminToken} />} />
+  </Routes>
+</Router>
   );
 }
 

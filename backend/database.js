@@ -89,7 +89,22 @@ const createTables = () => {
       FOREIGN KEY (contract_id) REFERENCES contracts(id)
     )
   `);
-
+// 🔹 ตารางการจองห้องพัก
+db.run(`
+  CREATE TABLE IF NOT EXISTS bookings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_id INTEGER NOT NULL,
+    name TEXT NOT NULL COLLATE NOCASE,
+    phone TEXT NOT NULL,
+    email TEXT NOT NULL COLLATE NOCASE,
+    check_in_date DATE NOT NULL,
+    duration INTEGER NOT NULL,
+    special_requests TEXT COLLATE NOCASE,
+    status TEXT DEFAULT 'pending' COLLATE NOCASE CHECK(status IN ('pending', 'confirmed', 'cancelled', 'completed')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (room_id) REFERENCES rooms(id)
+  )
+`);
   // 🔹 ตารางการชำระเงิน
   db.run(`
     CREATE TABLE IF NOT EXISTS payments (

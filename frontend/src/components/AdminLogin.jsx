@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { LogIn } from 'lucide-react';
+import "@fontsource/prompt";
 
 function AdminLogin({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -29,39 +31,44 @@ function AdminLogin({ onLogin }) {
   };
 
   return (
-    <div className="container my-5">
-      <h2 className="text-center">เข้าสู่ระบบผู้ดูแล</h2>
-      <div className="row justify-content-center">
-        <div className="col-md-4">
-          <div className="card p-4 shadow-sm">
-            {error && <div className="alert alert-danger">{error}</div>}
-            <form onSubmit={handleSubmit}>
-              <div className="mb-3">
-                <label className="form-label">ชื่อผู้ใช้</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">รหัสผ่าน</label>
-                <input
-                  type="password"
-                  className="form-control"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <button type="submit" className="btn btn-primary w-100">
-                เข้าสู่ระบบ
-              </button>
-            </form>
+    <div className="min-h-screen bg-gray-50 font-[Prompt] flex items-center justify-center px-4">
+      <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
+        <h2 className="text-3xl text-center font-bold text-gray-800 flex items-center justify-center gap-2 mb-6">
+          <LogIn className="text-blue-600" size={32} /> เข้าสู่ระบบผู้ดูแล
+        </h2>
+
+        {error && <div className="mb-4 text-center bg-red-100 text-red-600 py-2 rounded">{error}</div>}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-gray-700 font-medium">ชื่อผู้ใช้</label>
+            <input
+              type="text"
+              className="mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
           </div>
-        </div>
+
+          <div>
+            <label className="block text-gray-700 font-medium">รหัสผ่าน</label>
+            <input
+              type="password"
+              className="mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="mt-4 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition shadow"
+          >
+            เข้าสู่ระบบ
+          </button>
+        </form>
       </div>
     </div>
   );
