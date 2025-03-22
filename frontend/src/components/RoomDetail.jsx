@@ -16,7 +16,6 @@ import "swiper/css/pagination";
 import "swiper/css/effect-fade";
 import '@fontsource/prompt';
 
-
 const RoomDetail = () => {
   const { id } = useParams();
   const [room, setRoom] = useState(null);
@@ -26,64 +25,47 @@ const RoomDetail = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isOpenBooking, setIsOpenBooking] = useState(false);
+  const [booking, setBooking] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    check_in_date: "",
+    duration: "",
+    special_requests: ""
+  });
 
-const [booking, setBooking] = useState({
-  name: "",
-  phone: "",
-  email: "",
-  check_in_date: "",
-  duration: "",
-  special_requests: ""
-});
+  const handleBookingSubmit = async (e) => {
+    e.preventDefault();
 
-// ✅ ฟังก์ชันยืนยันการจอง
-const handleBookingSubmit = async (e) => {
-  e.preventDefault();
+    if (!room?.id) {
+      alert("ไม่พบข้อมูลห้อง");
+      return;
+    }
 
-  if (!room?.id) {
-    alert("ไม่พบข้อมูลห้อง");
-    return;
-  }
+    try {
+      const response = await axios.post("http://localhost:3001/api/bookings", {
+        room_id: room.id,
+        ...booking,
+      });
 
-  try {
-    const response = await axios.post("http://localhost:3001/api/bookings", {
-      room_id: room.id,
-      ...booking,
-    });
-
-    alert("✅ จองห้องเรียบร้อยแล้ว!");
-    setIsOpenBooking(false);
-  } catch (err) {
-    console.error("❌ Booking error:", err.response?.data || err.message);
-    alert("❌ ไม่สามารถจองห้องได้");
-  }
-};
-
-  // เพิ่มรูปภาพ fallback
-  const fallbackImage = "/assets/placeholder-room.jpg"; // ปรับตาม path ที่ถูกต้องในโปรเจคของคุณ
+      alert("✅ จองห้องเรียบร้อยแล้ว!");
+      setIsOpenBooking(false);
+    } catch (err) {
+      console.error("❌ Booking error:", err.response?.data || err.message);
+      alert("❌ ไม่สามารถจองห้องได้");
+    }
+  };
 
   useEffect(() => {
-    // เพิ่ม animation เมื่อโหลดข้อมูลเสร็จ
     setIsVisible(false);
-    
     axios.get(`http://localhost:3001/api/rooms/${id}`)
       .then(response => {
-        // ตรวจสอบและเตรียมข้อมูลรูปภาพ
         const roomData = response.data;
-        
-        // ตรวจสอบว่ามีรูปภาพหรือไม่ และกำหนดค่า default ถ้าไม่มี
-        if (!roomData.cover_image) {
-          roomData.cover_image = fallbackImage;
-        }
-        
-        // ตรวจสอบว่า images เป็น array และมีข้อมูลหรือไม่
-        if (!roomData.images || !Array.isArray(roomData.images)) {
-          roomData.images = [];
-        }
-        
+
+        // ไม่ต้องแสดง cover_image อีกต่อไป
+        roomData.images = Array.isArray(roomData.images) ? roomData.images : [];
         setRoom(roomData);
         setLoading(false);
-        // Trigger animation after data is loaded
         setTimeout(() => setIsVisible(true), 100);
       })
       .catch((error) => {
@@ -93,11 +75,10 @@ const handleBookingSubmit = async (e) => {
       });
   }, [id]);
 
-  // ฟังก์ชันสำหรับจัดการเมื่อรูปภาพโหลดไม่สำเร็จ
   const handleImageError = (e) => {
     console.log("Image failed to load:", e.target.src);
-    e.target.src = fallbackImage;
-    e.target.onerror = null; // ป้องกัน loop ถ้า fallback ก็โหลดไม่สำเร็จ
+    e.target.src = "/assets/placeholder-room.jpg";
+    e.target.onerror = null;
   };
 
   const getFacilityIcon = (facility) => {
@@ -109,7 +90,6 @@ const handleBookingSubmit = async (e) => {
       'เครื่องทำน้ำอุ่น': <ShowerHead className="w-5 h-5" />,
       'เครื่องชงกาแฟ': <Coffee className="w-5 h-5" />
     };
-    
     return facilityMap[facility] || <ShieldCheck className="w-5 h-5" />;
   };
 
@@ -118,43 +98,10 @@ const handleBookingSubmit = async (e) => {
     setIsOpen(true);
   };
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-blue-50 to-white font-[Prompt]">
-      <div className="flex flex-col items-center">
-        <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-blue-600 mt-4 text-lg">กำลังโหลดข้อมูล...</p>
-      </div>
-    </div>
-  );
+  if (loading) return <div>กำลังโหลดข้อมูล...</div>;
+  if (error || !room) return <div>{error || "ไม่พบข้อมูลห้องพัก"}</div>;
 
-  if (error || !room) return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-red-50 to-white font-[Prompt]">
-      <div className="bg-white p-8 rounded-xl shadow-lg max-w-md border-l-4 border-red-500">
-        <div className="text-red-500 text-4xl mb-4">⚠️</div>
-        <h3 className="text-xl font-bold text-gray-800 mb-2">เกิดข้อผิดพลาด</h3>
-        <p className="text-gray-600">{error || "⚠️ ไม่พบข้อมูลห้องพัก"}</p>
-        <Link to="/rooms" className="mt-6 inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-          กลับไปหน้าห้องพัก
-        </Link>
-      </div>
-    </div>
-  );
-
-  // เตรียมรายการรูปภาพและตรวจสอบความถูกต้อง
-  let images = [];
-  if (room.cover_image) {
-    images.push(room.cover_image);
-  }
-  
-  if (room.images && Array.isArray(room.images) && room.images.length > 0) {
-    images = [...images, ...room.images];
-  }
-  
-  // หากไม่มีรูปภาพเลย ให้ใส่รูปภาพ placeholder
-  if (images.length === 0) {
-    images = [fallbackImage];
-  }
-  
+  const images = Array.isArray(room.images) && room.images.length > 0 ? room.images : ["/assets/placeholder-room.jpg"];
   const facilityList = room.facilities ? (typeof room.facilities === 'string' ? JSON.parse(room.facilities) : room.facilities) : [];
 
   return (

@@ -89,40 +89,59 @@ app.get("/api/rooms", (req, res) => {
       res.json(formattedRooms);
     });
   });
-// ✅ API เพิ่มห้องพัก (รองรับอัปโหลดรูปภาพ)
+// ✅ API เพิ่มห้องพัก (รองรับอัปโหลดรูปภาพและ facilities)
 app.post("/api/rooms", authenticateToken, upload.fields([
     { name: "cover_image", maxCount: 1 },
     { name: "images", maxCount: 5 }
-]), (req, res) => {
+  ]), (req, res) => {
     const {
-        room_number, type, floor, size, rent_price, deposit, status,
-        description, water_price, electricity_price
+      room_number, type, floor, size, rent_price, deposit, status,
+      description, water_price, electricity_price
     } = req.body;
-
+  
     if (!room_number) return res.status(400).json({ error: "กรุณาระบุหมายเลขห้อง" });
-
+  
+    // ✅ ดึงข้อมูลรูปภาพ
     const coverImagePath = req.files["cover_image"] ? req.files["cover_image"][0].filename : null;
     const imagesPaths = req.files["images"] ? req.files["images"].map(file => file.filename) : [];
-
+  
+    // ✅ ดึงและจัดการ facilities
+    let facilities = req.body.facilities;
+    if (typeof facilities === "string") {
+      try {
+        facilities = JSON.parse(facilities);
+      } catch (err) {
+        return res.status(400).json({ error: "รูปแบบข้อมูล facilities ไม่ถูกต้อง (ควรเป็น JSON)" });
+      }
+    }
+    if (!Array.isArray(facilities)) facilities = [];
+    const facilitiesJSON = JSON.stringify(facilities);
+  
+    // ✅ เพิ่ม field 'facilities' เข้า SQL
     const sql = `
-        INSERT INTO rooms (
-            room_number, type, floor, size, rent_price, deposit, status, 
-            description, cover_image, images, water_price, electricity_price
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO rooms (
+        room_number, type, floor, size, rent_price, deposit, status,
+        description, cover_image, images, water_price, electricity_price, facilities
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-
+  
     db.run(
-        sql,
-        [
-            room_number, type, floor, size, rent_price, deposit, status,
-            description, coverImagePath, JSON.stringify(imagesPaths), water_price, electricity_price
-        ],
-        function (err) {
-            if (err) return res.status(400).json({ error: "ไม่สามารถเพิ่มห้องพักได้" });
-            res.status(201).json({ message: "✅ เพิ่มห้องพักสำเร็จ!", room_id: this.lastID });
+      sql,
+      [
+        room_number, type, floor, size, rent_price, deposit, status,
+        description, coverImagePath, JSON.stringify(imagesPaths),
+        water_price, electricity_price, facilitiesJSON
+      ],
+      function (err) {
+        if (err) {
+          console.error("❌ เพิ่มห้องพักล้มเหลว:", err.message);
+          return res.status(400).json({ error: "ไม่สามารถเพิ่มห้องพักได้" });
         }
+  
+        res.status(201).json({ message: "✅ เพิ่มห้องพักสำเร็จ!", room_id: this.lastID });
+      }
     );
-});
+  });
 
 // ✅ API ลบห้องพัก
 app.delete("/api/rooms/:id", authenticateToken, (req, res) => {

@@ -70,23 +70,26 @@ const AddRoom = ({ token }) => {
   const handleAddRoom = async (e) => {
     e.preventDefault();
     setLoading(true);
-
+  
     const formData = new FormData();
+  
     Object.keys(newRoom).forEach((key) => {
       if (key === "images") {
-        newRoom.images.forEach((img) => img && formData.append("images", img));
+        newRoom.images.forEach((img) => {
+          if (img) formData.append("images", img);
+        });
       } else if (key === "facilities") {
-        formData.append("facilities", JSON.stringify(newRoom.facilities));
+        newRoom.facilities.forEach((item) => formData.append("facilities", item));
       } else {
         formData.append(key, newRoom[key]);
       }
     });
-
+  
     try {
       await axios.post("http://localhost:3001/api/rooms", formData, {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
       });
-
+  
       navigate("/admin", { state: { message: "✅ เพิ่มห้องพักเรียบร้อยแล้ว!" } });
     } catch (error) {
       console.error("❌ เกิดข้อผิดพลาด:", error);
@@ -158,9 +161,9 @@ const AddRoom = ({ token }) => {
                         required
                       >
                         <option value="">เลือกประเภทห้อง</option>
-                        <option value="ห้องเดี่ยว">ห้องเดี่ยว</option>
-                        <option value="ห้องคู่">ห้องคู่</option>
-                        <option value="ห้องพิเศษ">ห้องพิเศษ</option>
+                        <option value="ห้องเปล่า">ห้องเปล่า</option>
+                        <option value="เฟอร์นิเจอร์บางส่วน">เฟอร์นิเจอร์บางส่วน</option>
+                        <option value="เฟอร์นิเจอร์ครบ">เฟอร์นิเจอร์ครบ</option>
                       </select>
                     </div>
                     <div>
