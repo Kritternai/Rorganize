@@ -26,7 +26,8 @@ const RentalContract = ({ token }) => {
     deposit_amount: "",
     status: "active",
     guarantor_name: "",
-    contract_note: ""
+    contract_note: "",
+    special_terms: ""
   });
   const [tenantForm, setTenantForm] = useState({
     fullname: "",
@@ -34,6 +35,31 @@ const RentalContract = ({ token }) => {
     phone: "",
     emergency_contact: ""
   });
+  const [viewContract, setViewContract] = useState(null);
+  const [tenants, setTenants] = useState([]);
+  
+  useEffect(() => {
+    if (token) {
+      fetchTenants();
+    }
+  }, [token]);
+  
+  const fetchTenants = async () => {
+    try {
+      const res = await axios.get("http://localhost:3001/api/tenants", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (Array.isArray(res.data)) {
+        setTenants(res.data);
+      } else {
+        console.warn("Unexpected tenants response:", res.data);
+        setTenants([]);
+      }
+    } catch (err) {
+      console.error("❌ Error fetching tenants:", err);
+      setTenants([]);
+    }
+  };
 
   useEffect(() => {
     fetchRooms();
@@ -183,6 +209,7 @@ const RentalContract = ({ token }) => {
     terminated: { label: "ยกเลิก", color: "bg-red-100 text-red-800", icon: <XCircle size={16} /> }
   };
   
+  const [roomContractMap, setRoomContractMap] = useState({});
   const [contracts, setContracts] = useState([]);
   
   useEffect(() => {
@@ -198,6 +225,11 @@ const RentalContract = ({ token }) => {
       });
       if (Array.isArray(res.data)) {
         setContracts(res.data);
+        const roomContractMap = {};
+        res.data.forEach(contract => {
+          roomContractMap[contract.room_id] = contract;
+        });
+        setRoomContractMap(roomContractMap);
       } else {
         console.warn("Unexpected contracts response:", res.data);
         setContracts([]);
@@ -213,6 +245,10 @@ const RentalContract = ({ token }) => {
     active: contracts.filter(c => c.status === "active").length,
     completed: contracts.filter(c => c.status === "completed").length,
     terminated: contracts.filter(c => c.status === "terminated").length
+  };
+
+  const getTenantById = (id) => {
+    return tenants.find((t) => t.id === id);
   };
 
   return (
@@ -310,13 +346,23 @@ const RentalContract = ({ token }) => {
                       <div>ประกัน: <span className="font-medium">{room.deposit.toLocaleString()} บาท</span></div>
                     </div>
 
-                    <button
-                      onClick={() => handleOpenModal(room)}
-                      className="w-full flex items-center justify-center text-sm px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                    >
-                      <Plus size={16} className="mr-1" />
-                      {room.is_occupied ? 'สร้างสัญญาใหม่' : 'เพิ่มสัญญาเช่า'}
-                    </button>
+                    {roomContractMap[room.id] ? (
+                      <button
+                        onClick={() => setViewContract(roomContractMap[room.id])}
+                        className="w-full flex items-center justify-center text-sm px-3 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition"
+                      >
+                        <FileText size={16} className="mr-1" />
+                        ดูสัญญาเช่า
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleOpenModal(room)}
+                        className="w-full flex items-center justify-center text-sm px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      >
+                        <Plus size={16} className="mr-1" />
+                        เพิ่มสัญญาเช่า
+                      </button>
+                    )}
                   </div>
                 </div>
               ))
@@ -476,6 +522,8 @@ const RentalContract = ({ token }) => {
           <label className="block text-sm font-medium text-gray-700 mb-1">เงื่อนไขพิเศษ (ถ้ามี)</label>
           <textarea
             name="special_terms"
+            value={formData.special_terms}
+            onChange={handleInputChange}
             placeholder="เช่น ค่าน้ำ/ไฟเพิ่มเติม การต่ออายุ ฯลฯ"
             rows="3"
             className="w-full border border-gray-300 px-3 py-2 rounded-lg"
@@ -545,7 +593,76 @@ const RentalContract = ({ token }) => {
     </div>
   </div>
 )}
-      
+      {viewContract && (
+  <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="bg-white w-full max-w-xl rounded-xl shadow-xl overflow-hidden">
+      <div className="bg-gray-700 text-white p-4 flex justify-between items-center">
+        <h2 className="text-xl font-semibold flex items-center">
+          <FileText size={20} className="mr-2" />
+          ข้อมูลสัญญาเช่า
+        </h2>
+        <button onClick={() => setViewContract(null)} className="text-white hover:text-gray-300">
+          <XCircle size={20} />
+        </button>
+      </div>
+      <div className="p-6 text-sm text-gray-700 space-y-3">
+        <p><strong>รหัสสัญญา:</strong> {viewContract.id}</p>
+        <p><strong>ห้องพัก:</strong> {viewContract.room_id}</p>
+        <p><strong>ผู้เช่า:</strong> {getTenantById(viewContract.tenant_id)?.fullname || "ไม่พบข้อมูล"}</p>
+        <p><strong>เบอร์โทร:</strong> {getTenantById(viewContract.tenant_id)?.phone || "-"}</p>
+        <p><strong>อีเมล:</strong> {getTenantById(viewContract.tenant_id)?.email || "-"}</p>
+        <p><strong>เบอร์ติดต่อฉุกเฉิน:</strong> {getTenantById(viewContract.tenant_id)?.emergency_contact || "-"}</p>
+        <p><strong>วันที่เริ่มต้น:</strong> {viewContract.start_date}</p>
+        <p><strong>วันที่สิ้นสุด:</strong> {viewContract.end_date}</p>
+        <p><strong>ค่าเช่า:</strong> {parseFloat(viewContract.rent_amount).toLocaleString()} บาท</p>
+        <p><strong>ค่าประกัน:</strong> {parseFloat(viewContract.deposit_amount).toLocaleString()} บาท</p>
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">สถานะ:</label>
+          <select
+            value={viewContract.status}
+            onChange={async (e) => {
+              const newStatus = e.target.value;
+              try {
+                await axios.put(`http://localhost:3001/api/contracts/${viewContract.id}/status`, {
+                  status: newStatus
+                }, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                toast.success("อัปเดตสถานะสัญญาแล้ว", { position: "top-right", autoClose: 3000 });
+                fetchContracts(); // Refresh contracts list
+                setViewContract((prev) => ({ ...prev, status: newStatus }));
+              } catch (error) {
+                console.error("❌ Error updating contract status:", error);
+                toast.error("ไม่สามารถอัปเดตสถานะได้", { position: "top-right", autoClose: 3000 });
+              }
+            }}
+            className="border border-gray-300 rounded px-2 py-1"
+          >
+            <option value="active">กำลังใช้งาน</option>
+            <option value="completed">สิ้นสุด</option>
+            <option value="terminated">ยกเลิก</option>
+          </select>
+        </div>
+        <p><strong>ผู้ค้ำประกัน:</strong> {viewContract.guarantor_name || "ไม่มีข้อมูล"}</p>
+        <p><strong>เงื่อนไขเพิ่มเติม:</strong> {viewContract.contract_note || "ไม่มี"}</p>
+        {viewContract.document && (
+          <p>
+            <strong>เอกสารแนบ: </strong>
+            <a
+              href={`http://localhost:3001/uploads/${viewContract.document}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 underline"
+            >
+              ดาวน์โหลด
+            </a>
+          </p>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+
       <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );

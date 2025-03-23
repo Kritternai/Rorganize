@@ -446,6 +446,32 @@ db.run(sql, [
     res.status(201).json({ message: "✅ สร้างสัญญาเช่าสำเร็จ", contract_id: this.lastID });
   });
 });
+/**
+ * API อัปเดตสถานะสัญญาเช่า
+ * PUT /api/contracts/:id/status
+ * 
+ * Headers: Authorization (JWT)
+ * Params: id - รหัสสัญญาเช่า
+ * Body: { status } - สถานะใหม่
+ * Response: สถานะการอัปเดต
+ */
+app.put("/api/contracts/:id/status", authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  const allowedStatus = ["active", "completed", "terminated"];
+  if (!allowedStatus.includes(status)) {
+    return res.status(400).json({ error: "สถานะไม่ถูกต้อง" });
+  }
+
+  db.run("UPDATE contracts SET status = ? WHERE id = ?", [status, id], function (err) {
+    if (err) {
+      console.error("❌ ไม่สามารถอัปเดตสถานะสัญญา:", err.message);
+      return res.status(500).json({ error: "❌ ไม่สามารถอัปเดตสถานะสัญญาได้" });
+    }
+    res.json({ message: "✅ อัปเดตสถานะสัญญาเช่าสำเร็จ" });
+  });
+});
 
 /**
  * API ดึงข้อมูลสัญญาเช่าทั้งหมด
@@ -501,6 +527,49 @@ app.post("/api/tenants", authenticateToken, (req, res) => {
     }
 
     res.status(201).json({ message: "✅ เพิ่มผู้เช่าสำเร็จ", id: this.lastID });
+  });
+});
+/**
+ * API ดึงข้อมูลผู้เช่าทั้งหมด
+ * GET /api/tenants
+ * 
+ * Headers: Authorization (JWT)
+ * Response: รายการผู้เช่าทั้งหมด
+ */
+app.get("/api/tenants", authenticateToken, (req, res) => {
+  db.all("SELECT * FROM tenants", [], (err, rows) => {
+    if (err) {
+      console.error("❌ ไม่สามารถดึงข้อมูลผู้เช่า:", err.message);
+      return res.status(500).json({ error: "❌ ไม่สามารถดึงข้อมูลผู้เช่าได้" });
+    }
+
+    res.json(rows);
+  });
+});
+
+
+/**
+ * API ดึงข้อมูลสัญญาเช่าทั้งหมด พร้อมข้อมูลผู้เช่า
+ * GET /api/contracts
+ */
+app.get("/api/contracts", authenticateToken, (req, res) => {
+  db.all(`
+    SELECT 
+      c.*, 
+      t.fullname AS tenant_name,
+      t.email AS tenant_email,
+      t.phone AS tenant_phone,
+      t.emergency_contact AS tenant_emergency_contact
+    FROM contracts c
+    LEFT JOIN tenants t ON c.tenant_id = t.id
+    ORDER BY c.start_date DESC
+  `, [], (err, rows) => {
+    if (err) {
+      console.error("❌ ไม่สามารถดึงข้อมูลสัญญา:", err.message);
+      return res.status(500).json({ error: "❌ ไม่สามารถดึงข้อมูลสัญญาได้" });
+    }
+
+    res.json(rows);
   });
 });
 
