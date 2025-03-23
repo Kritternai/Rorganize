@@ -1,3 +1,9 @@
+/**
+ * ระบบบริหารจัดการอพาร์ทเมนท์ - Backend API
+ * ประกอบด้วย API สำหรับจัดการผู้ใช้งาน, การจองห้อง, ห้องพัก, สัญญาเช่า และการแจ้งเตือน
+ */
+
+// Import dependencies
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -8,299 +14,546 @@ const path = require("path");
 const fs = require("fs");
 const db = require("./database");
 
+// Initialize Express app
 const app = express();
 const port = 3001;
 const JWT_SECRET = "your-secret-key";
 
+// Middleware setup
 app.use(cors());
 app.use(bodyParser.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// ✅ ตั้งค่าการอัปโหลดไฟล์ (Multer)
+// ===================================================
+// Configure file upload with Multer
+// ===================================================
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadDir = "uploads";
-        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname));
-    },
+  destination: (req, file, cb) => {
+    const uploadDir = "uploads";
+    // สร้างโฟลเดอร์ uploads ถ้ายังไม่มี
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // กำหนดชื่อไฟล์ด้วย timestamp + นามสกุลไฟล์เดิม
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
 });
-
-app.use("/uploads", express.static("uploads"));
 
 const upload = multer({ storage });
 
-// ✅ Middleware ตรวจสอบ JWT Token
+// ===================================================
+// Authentication Middleware
+// ===================================================
 const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1];
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
 
-    if (!token) return res.status(401).json({ error: "กรุณาเข้าสู่ระบบ" });
+  if (!token) return res.status(401).json({ error: "กรุณาเข้าสู่ระบบ" });
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ error: "Token ไม่ถูกต้องหรือหมดอายุ" });
-        req.user = user;
-        next();
-    });
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: "Token ไม่ถูกต้องหรือหมดอายุ" });
+    req.user = user;
+    next();
+  });
 };
 
-// ✅ API ลงทะเบียนผู้ใช้
+// ===================================================
+// User Authentication APIs
+// ===================================================
+
+/**
+ * API ลงทะเบียนผู้ใช้งานใหม่
+ * POST /api/register
+ * 
+ * Body: { username, password, role }
+ * Response: สถานะการลงทะเบียน
+ */
 app.post("/api/register", async (req, res) => {
-    const { username, password, role } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
+  const { username, password, role } = req.body;
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-    db.run(
-        "INSERT INTO users (username, password, role) VALUES (?, ?, ?)", 
-        [username, hashedPassword, role], 
-        function (err) {
-            if (err) return res.status(400).json({ error: "ชื่อผู้ใช้ซ้ำหรือข้อมูลผิดพลาด" });
-            res.status(201).json({ message: "✅ ลงทะเบียนสำเร็จ" });
-        }
-    );
+  db.run(
+    "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+    [username, hashedPassword, role],
+    function (err) {
+      if (err) return res.status(400).json({ error: "ชื่อผู้ใช้ซ้ำหรือข้อมูลผิดพลาด" });
+      res.status(201).json({ message: "✅ ลงทะเบียนสำเร็จ" });
+    }
+  );
 });
 
-// ✅ API ล็อกอิน
+/**
+ * API เข้าสู่ระบบ
+ * POST /api/login
+ * 
+ * Body: { username, password }
+ * Response: { token, user }
+ */
 app.post("/api/login", (req, res) => {
-    const { username, password } = req.body;
-    db.get("SELECT * FROM users WHERE username = ?", [username], async (err, user) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.status(401).json({ error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" });
-        }
-        const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: "1h" });
-        res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
-    });
+  const { username, password } = req.body;
+  db.get("SELECT * FROM users WHERE username = ?", [username], async (err, user) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" });
+    }
+    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: "1h" });
+    res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
+  });
 });
 
-// ✅ API ดึงข้อมูลห้องพักทั้งหมด
+// ===================================================
+// Room Management APIs
+// ===================================================
+
+/**
+ * API ดึงข้อมูลห้องพักทั้งหมด
+ * GET /api/rooms
+ * 
+ * Response: รายการห้องพักทั้งหมดพร้อม URL ของรูปภาพ
+ */
 app.get("/api/rooms", (req, res) => {
-    db.all("SELECT * FROM rooms", [], (err, rows) => {
-      if (err) return res.status(400).json({ error: err.message });
-  
-      // แปลง cover_image และ images ให้เป็น URL เต็ม
-      const formattedRooms = rows.map((room) => ({
-        ...room,
-        cover_image: room.cover_image ? `http://localhost:3001/uploads/${room.cover_image}` : null,
-        images: room.images ? JSON.parse(room.images).map(img => `http://localhost:3001/uploads/${img}`) : [],
-      }));
-  
-      res.json(formattedRooms);
+  db.all("SELECT * FROM rooms", [], (err, rows) => {
+    if (err) return res.status(400).json({ error: err.message });
+
+    // แปลง cover_image และ images ให้เป็น URL เต็ม
+    const formattedRooms = rows.map((room) => ({
+      ...room,
+      cover_image: room.cover_image ? `http://localhost:3001/uploads/${room.cover_image}` : null,
+      images: room.images ? JSON.parse(room.images).map(img => `http://localhost:3001/uploads/${img}`) : [],
+    }));
+
+    res.json(formattedRooms);
+  });
+});
+
+/**
+ * API ดึงข้อมูลห้องพักตาม ID
+ * GET /api/rooms/:id
+ * 
+ * Params: id - รหัสห้องพัก
+ * Response: ข้อมูลห้องพักพร้อม URL ของรูปภาพ
+ */
+app.get("/api/rooms/:id", (req, res) => {
+  const { id } = req.params;
+
+  db.get("SELECT * FROM rooms WHERE id = ?", [id], (err, room) => {
+    if (err) {
+      console.error("❌ ไม่สามารถดึงข้อมูลห้องได้:", err);
+      return res.status(500).json({ error: "❌ ไม่สามารถดึงข้อมูลห้องได้" });
+    }
+    if (!room) {
+      return res.status(404).json({ error: "❌ ไม่พบห้องที่ต้องการ" });
+    }
+
+    // แปลงข้อมูล JSON string เป็น object
+    room.images = room.images ? JSON.parse(room.images) : [];
+    room.facilities = room.facilities ? JSON.parse(room.facilities) : [];
+
+    // สร้าง URL เต็มสำหรับรูปภาพ
+    room.cover_image = room.cover_image
+      ? `http://localhost:3001/uploads/${room.cover_image}`
+      : null;
+
+    room.images = room.images.map(img => `http://localhost:3001/uploads/${img}`);
+
+    res.json(room);
+  });
+});
+
+/**
+ * API เพิ่มห้องพักใหม่
+ * POST /api/rooms
+ * 
+ * Headers: Authorization (JWT)
+ * Body: ข้อมูลห้องพักและรูปภาพ
+ * Response: สถานะการเพิ่มห้องพัก
+ */
+app.post("/api/rooms", authenticateToken, upload.fields([
+  { name: "cover_image", maxCount: 1 },
+  { name: "images", maxCount: 5 }
+]), (req, res) => {
+  const {
+    room_number, type, floor, size, rent_price, deposit, status,
+    description, water_price, electricity_price
+  } = req.body;
+
+  if (!room_number) return res.status(400).json({ error: "กรุณาระบุหมายเลขห้อง" });
+
+  // ดึงข้อมูลรูปภาพ
+  const coverImagePath = req.files["cover_image"] ? req.files["cover_image"][0].filename : null;
+  const imagesPaths = req.files["images"] ? req.files["images"].map(file => file.filename) : [];
+
+  // ดึงและจัดการ facilities
+  let facilities = req.body.facilities;
+  if (typeof facilities === "string") {
+    try {
+      facilities = JSON.parse(facilities);
+    } catch (err) {
+      return res.status(400).json({ error: "รูปแบบข้อมูล facilities ไม่ถูกต้อง (ควรเป็น JSON)" });
+    }
+  }
+  if (!Array.isArray(facilities)) facilities = [];
+  const facilitiesJSON = JSON.stringify(facilities);
+
+  const sql = `
+    INSERT INTO rooms (
+      room_number, type, floor, size, rent_price, deposit, status,
+      description, cover_image, images, water_price, electricity_price, facilities
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.run(
+    sql,
+    [
+      room_number, type, floor, size, rent_price, deposit, status,
+      description, coverImagePath, JSON.stringify(imagesPaths),
+      water_price, electricity_price, facilitiesJSON
+    ],
+    function (err) {
+      if (err) {
+        console.error("❌ เพิ่มห้องพักล้มเหลว:", err.message);
+        return res.status(400).json({ error: "ไม่สามารถเพิ่มห้องพักได้" });
+      }
+
+      res.status(201).json({ message: "✅ เพิ่มห้องพักสำเร็จ!", room_id: this.lastID });
+    }
+  );
+});
+
+/**
+ * API แก้ไขข้อมูลห้องพัก
+ * PUT /api/rooms/:id
+ * 
+ * Headers: Authorization (JWT)
+ * Params: id - รหัสห้องพัก
+ * Body: ข้อมูลห้องพักที่ต้องการแก้ไข
+ * Response: สถานะการอัปเดตห้องพัก
+ */
+app.put("/api/rooms/:id", authenticateToken, upload.fields([
+  { name: "cover_image", maxCount: 1 },
+  { name: "images", maxCount: 5 }
+]), (req, res) => {
+  const { id } = req.params;
+  const {
+    room_number, type, floor, size, rent_price, deposit, status,
+    description, water_price, electricity_price
+  } = req.body;
+
+  // จัดการข้อมูล facilities
+  let facilities = req.body.facilities;
+  if (typeof facilities === "string") {
+    try {
+      facilities = JSON.parse(facilities);
+    } catch (err) {
+      return res.status(400).json({ error: "รูปแบบข้อมูล facilities ไม่ถูกต้อง (ควรเป็น JSON)" });
+    }
+  }
+  if (!Array.isArray(facilities)) facilities = [];
+  const facilitiesJSON = JSON.stringify(facilities);
+
+  // จัดการรูปภาพที่อัปโหลด
+  const coverImagePath = req.files["cover_image"] ? req.files["cover_image"][0].filename : null;
+  const imagesPaths = req.files["images"] ? req.files["images"].map(file => file.filename) : [];
+
+  // ดึงข้อมูลห้องเก่าจากฐานข้อมูล
+  db.get("SELECT * FROM rooms WHERE id = ?", [id], (err, room) => {
+    if (err || !room) {
+      return res.status(404).json({ error: "ไม่พบห้องพักที่ต้องการแก้ไข" });
+    }
+
+    // ใช้ข้อมูลเดิมถ้าไม่มีการอัปโหลดใหม่
+    const updatedCover = coverImagePath || room.cover_image;
+    const updatedImages = imagesPaths.length > 0 ? JSON.stringify(imagesPaths) : room.images;
+
+    const sql = `
+      UPDATE rooms SET
+        room_number = ?, type = ?, floor = ?, size = ?, rent_price = ?, deposit = ?, status = ?,
+        description = ?, cover_image = ?, images = ?, water_price = ?, electricity_price = ?, facilities = ?
+      WHERE id = ?
+    `;
+
+    db.run(sql, [
+      room_number, type, floor, size, rent_price, deposit, status,
+      description, updatedCover, updatedImages, water_price, electricity_price, facilitiesJSON,
+      id
+    ], function (err) {
+      if (err) {
+        console.error("❌ ไม่สามารถอัปเดตห้องพักได้:", err.message);
+        return res.status(500).json({ error: "❌ ไม่สามารถอัปเดตห้องพักได้" });
+      }
+
+      res.json({ message: "✅ แก้ไขข้อมูลห้องพักสำเร็จ" });
     });
   });
-// ✅ API เพิ่มห้องพัก (รองรับอัปโหลดรูปภาพและ facilities)
-app.post("/api/rooms", authenticateToken, upload.fields([
-    { name: "cover_image", maxCount: 1 },
-    { name: "images", maxCount: 5 }
-  ]), (req, res) => {
-    const {
-      room_number, type, floor, size, rent_price, deposit, status,
-      description, water_price, electricity_price
-    } = req.body;
-  
-    if (!room_number) return res.status(400).json({ error: "กรุณาระบุหมายเลขห้อง" });
-  
-    // ✅ ดึงข้อมูลรูปภาพ
-    const coverImagePath = req.files["cover_image"] ? req.files["cover_image"][0].filename : null;
-    const imagesPaths = req.files["images"] ? req.files["images"].map(file => file.filename) : [];
-  
-    // ✅ ดึงและจัดการ facilities
-    let facilities = req.body.facilities;
-    if (typeof facilities === "string") {
-      try {
-        facilities = JSON.parse(facilities);
-      } catch (err) {
-        return res.status(400).json({ error: "รูปแบบข้อมูล facilities ไม่ถูกต้อง (ควรเป็น JSON)" });
-      }
+});
+
+/**
+ * API ลบห้องพัก
+ * DELETE /api/rooms/:id
+ * 
+ * Headers: Authorization (JWT)
+ * Params: id - รหัสห้องพัก
+ * Response: สถานะการลบห้องพัก
+ */
+app.delete("/api/rooms/:id", authenticateToken, (req, res) => {
+  const { id } = req.params;
+  db.run("DELETE FROM rooms WHERE id = ?", [id], function (err) {
+    if (err) return res.status(400).json({ error: "ไม่สามารถลบห้องพักได้" });
+    res.json({ message: "✅ ลบห้องพักสำเร็จ!" });
+  });
+});
+
+// ===================================================
+// Booking Management APIs
+// ===================================================
+
+/**
+ * API เพิ่มข้อมูลการจองห้องพัก
+ * POST /api/bookings
+ * 
+ * Body: ข้อมูลการจอง
+ * Response: สถานะการจอง
+ */
+app.post("/api/bookings", (req, res) => {
+  console.log("📥 Booking Request Received:", req.body);
+  const {
+    room_id, name, phone, email,
+    check_in_date, duration, special_requests
+  } = req.body;
+
+  // ตรวจสอบสถานะห้องก่อนทำการจอง
+  db.get("SELECT status FROM rooms WHERE id = ?", [room_id], (err, room) => {
+    if (err || !room) {
+      return res.status(404).json({ error: "ไม่พบห้องพัก" });
     }
-    if (!Array.isArray(facilities)) facilities = [];
-    const facilitiesJSON = JSON.stringify(facilities);
-  
-    // ✅ เพิ่ม field 'facilities' เข้า SQL
-    const sql = `
-      INSERT INTO rooms (
-        room_number, type, floor, size, rent_price, deposit, status,
-        description, cover_image, images, water_price, electricity_price, facilities
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-  
-    db.run(
-      sql,
-      [
-        room_number, type, floor, size, rent_price, deposit, status,
-        description, coverImagePath, JSON.stringify(imagesPaths),
-        water_price, electricity_price, facilitiesJSON
-      ],
+
+    if (room.status !== "available") {
+      return res.status(400).json({ error: "ห้องนี้ไม่พร้อมให้จอง" });
+    }
+
+    // บันทึกข้อมูลการจอง
+    db.run(`
+      INSERT INTO bookings (room_id, name, phone, email, check_in_date, duration, special_requests)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [room_id, name, phone, email, check_in_date, duration, special_requests],
       function (err) {
         if (err) {
-          console.error("❌ เพิ่มห้องพักล้มเหลว:", err.message);
-          return res.status(400).json({ error: "ไม่สามารถเพิ่มห้องพักได้" });
+          return res.status(500).json({ error: "ไม่สามารถจองห้องได้" });
         }
-  
-        res.status(201).json({ message: "✅ เพิ่มห้องพักสำเร็จ!", room_id: this.lastID });
+
+        // อัพเดตสถานะห้อง
+        db.run("UPDATE rooms SET status = 'reserved' WHERE id = ?", [room_id]);
+
+        return res.json({ message: "จองห้องเรียบร้อย", booking_id: this.lastID });
       }
     );
   });
-
-// ✅ API ลบห้องพัก
-app.delete("/api/rooms/:id", authenticateToken, (req, res) => {
-    const { id } = req.params;
-    db.run("DELETE FROM rooms WHERE id = ?", [id], function (err) {
-        if (err) return res.status(400).json({ error: "ไม่สามารถลบห้องพักได้" });
-        res.json({ message: "✅ ลบห้องพักสำเร็จ!" });
-    });
 });
 
-// ✅ API แสดงข้อมูล Dashboard สำหรับ Admin
-app.get("/api/admin/dashboard", authenticateToken, (req, res) => {
-    if (req.user.role !== "admin") return res.status(403).json({ error: "Unauthorized" });
-
-    db.get(
-        `SELECT 
-            (SELECT COUNT(*) FROM users) AS user_count, 
-            (SELECT COUNT(*) FROM rooms WHERE status='available') AS available_rooms, 
-            (SELECT COUNT(*) FROM rooms WHERE status='occupied') AS occupied_rooms,
-            (SELECT COUNT(*) FROM rooms) AS total_rooms
-        `, 
-        [], 
-        (err, stats) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json(stats);
-        }
-    );
-});
-
-// ✅ API ดึงข้อมูลการแจ้งเตือน
-app.get("/api/notifications", authenticateToken, (req, res) => {
-    db.all("SELECT * FROM notifications WHERE user_id = ?", [req.user.id], (err, rows) => {
-        if (err) return res.status(400).json({ error: "ไม่สามารถดึงข้อมูลการแจ้งเตือนได้" });
-        res.json(rows);
-    });
-});
-
-app.post("/api/bookings", (req, res) => {
-    console.log("📥 Booking Request Received:", req.body);
-    const {
-      room_id, name, phone, email,
-      check_in_date, duration, special_requests
-    } = req.body;
-  
-    db.get("SELECT status FROM rooms WHERE id = ?", [room_id], (err, room) => {
-      if (err || !room) {
-        return res.status(404).json({ error: "ไม่พบห้องพัก" });
-      }
-  
-      if (room.status !== "available") {
-        return res.status(400).json({ error: "ห้องนี้ไม่พร้อมให้จอง" });
-      }
-  
-      db.run(`
-        INSERT INTO bookings (room_id, name, phone, email, check_in_date, duration, special_requests)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [room_id, name, phone, email, check_in_date, duration, special_requests],
-        function (err) {
-          if (err) {
-            return res.status(500).json({ error: "ไม่สามารถจองห้องได้" });
-          }
-  
-          // อัพเดตสถานะห้อง
-          db.run("UPDATE rooms SET status = 'reserved' WHERE id = ?", [room_id]);
-  
-          return res.json({ message: "จองห้องเรียบร้อย", booking_id: this.lastID });
-        }
-      );
-    });
-  });
-
-app.get("/api/admin/dashboard", authenticateToken, (req, res) => {
-    if (req.user.role !== "admin") return res.status(403).json({ error: "Unauthorized" });
-
-    db.get(
-        `SELECT 
-            (SELECT COUNT(*) FROM rooms) AS total_rooms, 
-            (SELECT COUNT(*) FROM rooms WHERE status='occupied') AS occupied_rooms, 
-            (SELECT COUNT(*) FROM rooms WHERE status='available') AS available_rooms
-        `, 
-        [], 
-        (err, stats) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json(stats);
-        }
-    );
-});
-
-// ✅ API ดึงข้อมูลห้องพักตาม id (อัปเดตล่าสุดและถูกต้องที่สุด)
-app.get("/api/rooms/:id", (req, res) => {
-    const { id } = req.params;
-
-    db.get("SELECT * FROM rooms WHERE id = ?", [id], (err, room) => {
-        if (err) {
-            console.error("❌ ไม่สามารถดึงข้อมูลห้องได้:", err);
-            return res.status(500).json({ error: "❌ ไม่สามารถดึงข้อมูลห้องได้" });
-        }
-        if (!room) {
-            return res.status(404).json({ error: "❌ ไม่พบห้องที่ต้องการ" });
-        }
-
-        room.images = room.images ? JSON.parse(room.images) : [];
-        room.facilities = room.facilities ? JSON.parse(room.facilities) : [];
-
-        room.cover_image = room.cover_image
-            ? `http://localhost:999/uploads/${room.cover_image}`
-            : null;
-
-        room.images = room.images.map(img => `http://localhost:3001/uploads/${img}`);
-
-        res.json(room);
-    });
-});
-
-// ✅ API: ดึงข้อมูลห้องพักตาม ID
-app.get("/api/rooms/:id", (req, res) => {
-    const roomId = req.params.id;
-
-    db.get("SELECT * FROM rooms WHERE id = ?", [roomId], (err, room) => {
-        if (err) {
-            console.error("❌ ไม่สามารถดึงข้อมูลห้องได้:", err);
-            return res.status(500).json({ error: "❌ ไม่สามารถดึงข้อมูลห้องได้" });
-        }
-        if (!room) {
-            return res.status(404).json({ error: "❌ ไม่พบห้องที่ต้องการ" });
-        }
-        res.json(room);
-    });
-});
-
-// ✅ API ดึงข้อมูลห้องพักจาก ID
-app.get("/api/rooms/:id", (req, res) => {
-    const { id } = req.params;
-
-    db.get("SELECT * FROM rooms WHERE id = ?", [id], (err, room) => {
-        if (err) return res.status(500).json({ error: "❌ เกิดข้อผิดพลาดในการโหลดข้อมูลห้องพัก" });
-        if (!room) return res.status(404).json({ error: "⚠️ ไม่พบข้อมูลห้องพัก" });
-        res.json(room);
-    });
-});
-
-// ✅ ดึงข้อมูลการจอง(Admin)
+/**
+ * API ดึงข้อมูลการจองทั้งหมด (สำหรับ Admin)
+ * GET /api/bookings
+ * 
+ * Response: รายการการจองทั้งหมดพร้อมข้อมูลห้องพัก
+ */
 app.get("/api/bookings", (req, res) => {
-    db.all(`
-      SELECT 
-        b.*, 
-        r.room_number, r.type, r.floor, r.size, r.rent_price 
-      FROM bookings b
-      LEFT JOIN rooms r ON b.room_id = r.id
-      ORDER BY b.created_at DESC
-    `, (err, rows) => {
-      if (err) {
-        return res.status(500).json({ error: "ไม่สามารถดึงข้อมูลการจองได้" });
-      }
-      res.json(rows);
-    });
+  db.all(`
+    SELECT 
+      b.*, 
+      r.room_number, r.type, r.floor, r.size, r.rent_price 
+    FROM bookings b
+    LEFT JOIN rooms r ON b.room_id = r.id
+    ORDER BY b.created_at DESC
+  `, (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: "ไม่สามารถดึงข้อมูลการจองได้" });
+    }
+    res.json(rows);
   });
+});
 
-// ✅ Start Server
+/**
+ * API อัปเดตสถานะการจอง
+ * PUT /api/bookings/:id/status
+ * 
+ * Headers: Authorization (JWT)
+ * Params: id - รหัสการจอง
+ * Body: { status } - สถานะใหม่
+ * Response: สถานะการอัปเดต
+ */
+app.put("/api/bookings/:id/status", authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!["pending", "confirmed", "cancelled"].includes(status)) {
+    return res.status(400).json({ error: "สถานะไม่ถูกต้อง" });
+  }
+
+  db.run("UPDATE bookings SET status = ? WHERE id = ?", [status, id], function (err) {
+    if (err) {
+      console.error("❌ ไม่สามารถอัปเดตสถานะการจอง:", err.message);
+      return res.status(500).json({ error: "❌ ไม่สามารถอัปเดตสถานะการจองได้" });
+    }
+    res.json({ message: "✅ อัปเดตสถานะการจองสำเร็จ" });
+  });
+});
+
+// ===================================================
+// Contract Management APIs
+// ===================================================
+
+
+/**
+ * API สร้างสัญญาเช่าใหม่
+ * POST /api/contracts
+ * 
+ * Headers: Authorization (JWT)
+ * Body: ข้อมูลสัญญาและไฟล์สัญญา
+ * Response: สถานะการสร้างสัญญา
+ */
+app.post("/api/contracts", authenticateToken, (req, res) => {
+  const {
+    tenant_id, room_id, start_date, end_date,
+    rent_amount, deposit_amount, status,
+    guarantor_name, contract_note
+  } = req.body;
+
+  //const contract_file = req.file ? req.file.filename : null;
+
+  if (!tenant_id || !room_id || !start_date || !end_date || !rent_amount || !deposit_amount) {
+    return res.status(400).json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" });
+  }
+
+  const sql = `
+      INSERT INTO contracts (
+        tenant_id, room_id, start_date, end_date,
+        rent_amount, deposit_amount, status,
+        guarantor_name, contract_note
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+db.run(sql, [
+  tenant_id, room_id, start_date, end_date,
+  rent_amount, deposit_amount, status,
+  guarantor_name, contract_note
+], function (err) {
+    if (err) {
+      console.error("❌ ไม่สามารถบันทึกสัญญา:", err.message);
+      return res.status(500).json({ error: "❌ ไม่สามารถบันทึกสัญญาได้" });
+    }
+
+    res.status(201).json({ message: "✅ สร้างสัญญาเช่าสำเร็จ", contract_id: this.lastID });
+  });
+});
+
+/**
+ * API ดึงข้อมูลสัญญาเช่าทั้งหมด
+ * GET /api/contracts
+ * 
+ * Headers: Authorization (JWT)
+ * Response: ข้อมูลสัญญาทั้งหมด
+ */
+app.get("/api/contracts", authenticateToken, (req, res) => {
+  db.all(`
+    SELECT 
+      c.*, 
+      r.room_number, r.floor, r.size, r.rent_price,
+      t.fullname AS tenant_name
+    FROM contracts c
+    LEFT JOIN rooms r ON c.room_id = r.id
+    LEFT JOIN tenants t ON c.tenant_id = t.id
+    ORDER BY c.start_date DESC
+  `, [], (err, rows) => {
+    if (err) {
+      console.error("❌ ไม่สามารถดึงข้อมูลสัญญา:", err.message);
+      return res.status(500).json({ error: "❌ ไม่สามารถดึงข้อมูลสัญญาได้" });
+    }
+
+    res.json(rows);
+  });
+});
+
+/**
+ * API สร้างผู้เช่าใหม่
+ * POST /api/tenants
+ * 
+ * Headers: Authorization (JWT)
+ * Body: { fullname, email, phone, emergency_contact }
+ * Response: สถานะการสร้างผู้เช่า
+ */
+app.post("/api/tenants", authenticateToken, (req, res) => {
+  const { fullname, email, phone, emergency_contact } = req.body;
+
+  if (!fullname || !phone) {
+    return res.status(400).json({ error: "กรุณาระบุชื่อและเบอร์โทรศัพท์ของผู้เช่า" });
+  }
+
+  const sql = `
+    INSERT INTO tenants (fullname, email, phone, emergency_contact)
+    VALUES (?, ?, ?, ?)
+  `;
+
+  db.run(sql, [fullname, email, phone, emergency_contact], function (err) {
+    if (err) {
+      console.error("❌ ไม่สามารถเพิ่มผู้เช่า:", err.message);
+      return res.status(500).json({ error: "❌ ไม่สามารถเพิ่มผู้เช่าได้" });
+    }
+
+    res.status(201).json({ message: "✅ เพิ่มผู้เช่าสำเร็จ", id: this.lastID });
+  });
+});
+
+// ===================================================
+// Notification APIs
+// ===================================================
+
+/**
+ * API ดึงข้อมูลการแจ้งเตือน
+ * GET /api/notifications
+ * 
+ * Headers: Authorization (JWT)
+ * Response: รายการการแจ้งเตือนของผู้ใช้
+ */
+app.get("/api/notifications", authenticateToken, (req, res) => {
+  db.all("SELECT * FROM notifications WHERE user_id = ?", [req.user.id], (err, rows) => {
+    if (err) return res.status(400).json({ error: "ไม่สามารถดึงข้อมูลการแจ้งเตือนได้" });
+    res.json(rows);
+  });
+});
+
+// ===================================================
+// Admin Dashboard APIs
+// ===================================================
+
+/**
+ * API แสดงข้อมูล Dashboard สำหรับ Admin
+ * GET /api/admin/dashboard
+ * 
+ * Headers: Authorization (JWT)
+ * Response: สถิติการใช้งานระบบ
+ */
+app.get("/api/admin/dashboard", authenticateToken, (req, res) => {
+  if (req.user.role !== "admin") return res.status(403).json({ error: "Unauthorized" });
+
+  db.get(
+    `SELECT 
+      (SELECT COUNT(*) FROM users) AS user_count, 
+      (SELECT COUNT(*) FROM rooms WHERE status='available') AS available_rooms, 
+      (SELECT COUNT(*) FROM rooms WHERE status='occupied') AS occupied_rooms,
+      (SELECT COUNT(*) FROM rooms) AS total_rooms
+    `,
+    [],
+    (err, stats) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(stats);
+    }
+  );
+});
+
+// ===================================================
+// Start Server
+// ===================================================
 app.listen(port, () => {
-    console.log(`🚀 Server running on port ${port}`);
+  console.log(`🚀 Server running on port ${port}`);
 });

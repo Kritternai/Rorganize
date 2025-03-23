@@ -89,15 +89,7 @@ const RoomsPage = () => {
           <div className="text-center text-red-500 bg-red-50 py-4 rounded-lg border border-red-200 animate-pulse">
             {error}
           </div>
-        )}
-        
-        {!loading && !error && (
-          <div className="text-center mb-8">
-            <span className="inline-block bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium">
-              🏠 กำลังแสดงเฉพาะห้องพักที่ว่างอยู่เท่านั้น
-            </span>
-          </div>
-        )}
+        )}    
         
         {!loading && !error && (
           <hr className="my-8 border-t-2 border-gray-200 w-2/3 mx-auto rounded-full" />
@@ -159,7 +151,13 @@ const RoomsPage = () => {
           )}
         </div>
       </div>
-
+      {!loading && !error && (
+          <div className="text-center mb-8">
+            <span className="inline-block bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium">
+              🏠 กำลังแสดงเฉพาะห้องพักที่ว่างอยู่เท่านั้น
+            </span>
+          </div>
+        )}
       {/* Add CSS animation keyframes */}
       <style jsx>{`
         @keyframes fadeIn {

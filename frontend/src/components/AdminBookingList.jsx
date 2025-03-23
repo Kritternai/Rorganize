@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import "@fontsource/prompt";
 import AdminSidebar from "./AdminSidebar";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const AdminBookingList = ({ token }) => {
   const [bookings, setBookings] = useState([]);
@@ -31,6 +33,8 @@ const AdminBookingList = ({ token }) => {
       setLoading(false);
     }
   };
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
 
   const refreshData = async () => {
     setIsRefreshing(true);
@@ -58,7 +62,8 @@ const AdminBookingList = ({ token }) => {
   };
 
   return (
-    <div className="flex font-[Prompt]">
+    <>
+      <div className="flex font-[Prompt]">
       <AdminSidebar />
       <div className="flex-1 p-6 bg-gray-50 min-h-screen">
         {/* หัวข้อ */}
@@ -142,10 +147,16 @@ const AdminBookingList = ({ token }) => {
                       <div className="text-xs text-gray-500 mt-1">ชั้น {booking.floor || "-"}, {booking.size || "-"} ตร.ม. ({booking.type || "-"})</div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${statusConfig[booking.status]?.color}`}>
+                      <button
+                        onClick={() => {
+                          setSelectedBooking(booking);
+                          setIsStatusModalOpen(true);
+                        }}
+                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${statusConfig[booking.status]?.color} hover:opacity-80 transition`}
+                      >
                         {statusConfig[booking.status]?.icon}
                         {statusConfig[booking.status]?.label}
-                      </span>
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -159,8 +170,75 @@ const AdminBookingList = ({ token }) => {
             </tbody>
           </table>
         </div>
+      <ToastContainer position="top-right" autoClose={3000} />
       </div>
-    </div>
+      {isStatusModalOpen && selectedBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4 text-gray-800">อัปเดตสถานะการจอง</h3>
+            <p className="text-gray-600 mb-4">
+              เปลี่ยนสถานะของ <span className="font-semibold">{selectedBooking.name}</span> สำหรับห้อง {selectedBooking.room_number}
+            </p>
+            <select
+              className="w-full p-2 mb-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              value={selectedBooking.status}
+            onChange={async (e) => {
+              const newStatus = e.target.value;
+              if (!selectedBooking?.id) {
+                toast(
+                  <div className="flex items-center space-x-2 font-[Prompt] text-yellow-700">
+                    <AlertTriangle size={20} className="text-yellow-500" />
+                    <span>ไม่พบข้อมูลการจองที่เลือก</span>
+                  </div>
+                );
+                return;
+              }
+
+              console.log("📦 Updating status for booking ID:", selectedBooking.id);
+
+              try {
+                await axios.put(
+                  `http://localhost:3001/api/bookings/${selectedBooking.id}/status`,
+                  { status: newStatus },
+                  { headers: { Authorization: `Bearer ${token}` } }
+                );
+                setSelectedBooking((prev) => ({ ...prev, status: newStatus }));
+                fetchBookings();
+                setIsStatusModalOpen(false);
+                toast(
+                  <div className="flex items-center space-x-2 font-[Prompt] text-green-700">
+                    <CheckCircle size={20} className="text-green-500" />
+                    <span>อัปเดตสถานะเรียบร้อย</span>
+                  </div>
+                );
+              } catch (error) {
+                console.error("Error updating status:", error);
+                toast(
+                  <div className="flex items-center space-x-2 font-[Prompt] text-red-700">
+                    <XCircle size={20} className="text-red-500" />
+                    <span>ไม่สามารถอัปเดตสถานะได้</span>
+                  </div>
+                );
+              }
+            }}
+            >
+              <option value="pending">รอดำเนินการ</option>
+              <option value="confirmed">ยืนยันแล้ว</option>
+              <option value="cancelled">ยกเลิก</option>
+            </select>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setIsStatusModalOpen(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                ยกเลิก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
+    </>
   );
 };
 

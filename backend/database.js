@@ -69,6 +69,9 @@ const createTables = () => {
       rent_amount REAL NOT NULL,
       deposit_amount REAL NOT NULL,
       status TEXT DEFAULT 'active' COLLATE NOCASE CHECK(status IN ('active', 'completed', 'terminated')),
+      guarantor_name TEXT COLLATE NOCASE,
+      contract_note TEXT COLLATE NOCASE,
+      document TEXT,
       FOREIGN KEY (tenant_id) REFERENCES tenants(id),
       FOREIGN KEY (room_id) REFERENCES rooms(id)
     )

@@ -6,8 +6,9 @@ import { Navigation, Pagination, Autoplay, EffectFade } from "swiper/modules";
 import { 
   Ruler, Building2, BedDouble, Droplet, Zap, ShieldCheck, X, 
   CalendarCheck, Clock, Wifi, Tv, AirVent, Car, Coffee, ShowerHead,
-  Image as ImageIcon
+  Image as ImageIcon, Box, Sofa, LayoutPanelTop, FileText
 } from 'lucide-react';
+
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import "swiper/css";
@@ -15,6 +16,8 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "swiper/css/effect-fade";
 import '@fontsource/prompt';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const RoomDetail = () => {
   const { id } = useParams();
@@ -36,23 +39,23 @@ const RoomDetail = () => {
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
-
+  
     if (!room?.id) {
-      alert("ไม่พบข้อมูลห้อง");
+      toast.error("ไม่พบข้อมูลห้อง");
       return;
     }
-
+  
     try {
       const response = await axios.post("http://localhost:3001/api/bookings", {
         room_id: room.id,
         ...booking,
       });
-
-      alert("✅ จองห้องเรียบร้อยแล้ว!");
+  
+      toast.success("จองห้องเรียบร้อยแล้ว!");
       setIsOpenBooking(false);
     } catch (err) {
-      console.error("❌ Booking error:", err.response?.data || err.message);
-      alert("❌ ไม่สามารถจองห้องได้");
+      console.error("Booking error:", err.response?.data || err.message);
+      toast.error("ไม่สามารถจองห้องได้");
     }
   };
 
@@ -70,7 +73,7 @@ const RoomDetail = () => {
       })
       .catch((error) => {
         console.error("Error fetching room data:", error);
-        setError("❌ ไม่สามารถโหลดข้อมูลห้องพักได้");
+        setError("ไม่สามารถโหลดข้อมูลห้องพักได้");
         setLoading(false);
       });
   }, [id]);
@@ -81,17 +84,21 @@ const RoomDetail = () => {
     e.target.onerror = null;
   };
 
-  const getFacilityIcon = (facility) => {
-    const facilityMap = {
-      'เครื่องปรับอากาศ': <AirVent className="w-5 h-5" />,
-      'อินเทอร์เน็ต': <Wifi className="w-5 h-5" />,
-      'ทีวี': <Tv className="w-5 h-5" />,
-      'ที่จอดรถ': <Car className="w-5 h-5" />,
-      'เครื่องทำน้ำอุ่น': <ShowerHead className="w-5 h-5" />,
-      'เครื่องชงกาแฟ': <Coffee className="w-5 h-5" />
-    };
-    return facilityMap[facility] || <ShieldCheck className="w-5 h-5" />;
+const getFacilityIcon = (facility) => {
+  const facilityMap = {
+    'เครื่องปรับอากาศ': <AirVent className="w-5 h-5" />,
+    'เครื่องทำน้ำอุ่น': <ShowerHead className="w-5 h-5" />,
+    'ตู้เย็น': <Box className="w-5 h-5" />,            // ใช้ Box แทน Refrigerator
+    'โทรทัศน์': <Tv className="w-5 h-5" />,
+    'โต๊ะทำงาน': <FileText className="w-5 h-5" />,      // ใช้ FileText หรือ LayoutPanelTop
+    'เตียง': <BedDouble className="w-5 h-5" />,
+    'ตู้เสื้อผ้า': <Box className="w-5 h-5" />,        // ใช้ Box แทน Wardrobe
+    'อินเทอร์เน็ต': <Wifi className="w-5 h-5" />,
+    'โซฟา': <Sofa className="w-5 h-5" />               // ใช้ Sofa จาก lucide-react
   };
+
+  return facilityMap[facility] || <ShieldCheck className="w-5 h-5" />;
+};
 
   const openModal = (img) => {
     setSelectedImage(img);
@@ -106,6 +113,7 @@ const RoomDetail = () => {
 
   return (
     <div className="font-[Prompt] bg-gradient-to-b from-blue-50 to-white min-h-screen">
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       {/* Navbar */}
       <nav className="sticky top-0 bg-white shadow-md z-50 backdrop-blur-md bg-white/90">
         <div className="container mx-auto flex justify-between items-center py-4 px-6">
@@ -372,7 +380,7 @@ const RoomDetail = () => {
       leaveFrom="opacity-100"
       leaveTo="opacity-0"
     >
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="fixed inset-0 bg-blue-900/80 backdrop-blur-sm" />
     </Transition.Child>
 
     <div className="fixed inset-0 flex items-center justify-center p-4">
@@ -385,89 +393,225 @@ const RoomDetail = () => {
         leaveFrom="opacity-100 scale-100"
         leaveTo="opacity-0 scale-95"
       >
-        <Dialog.Panel className="w-full max-w-xl bg-white rounded-xl p-6 shadow-xl space-y-6">
-          <Dialog.Title className="text-xl font-bold text-blue-700">
-            📋 จองห้อง {room.room_number}
-          </Dialog.Title>
+        <Dialog.Panel className="w-full max-w-xl bg-white rounded-2xl p-6 shadow-2xl border border-blue-100 max-h-[90vh] overflow-y-auto font-prompt">
+          {/* Header with decorative elements */}
+          <div className="relative mb-5">
+            <div className="absolute -top-3 -left-3 w-16 h-16 bg-blue-50 rounded-full opacity-70"></div>
+            <div className="absolute -bottom-3 -right-3 w-12 h-12 bg-blue-50 rounded-full opacity-70"></div>
+            
+            <Dialog.Title className="relative text-xl font-bold text-blue-800 flex items-center">
+              <span className="bg-blue-100 text-blue-700 p-2 rounded-lg mr-3">📋</span>
+              จองห้อง {room.room_number}
+              <div className="h-1 w-20 bg-blue-600 absolute -bottom-2 left-0 rounded-full"></div>
+            </Dialog.Title>
+          </div>
+          
+          {/* Rental Information Section - Redesigned */}
+          <div className="bg-gradient-to-r from-blue-50 to-white p-5 rounded-xl shadow-sm border border-blue-100 mb-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold text-blue-800 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                </svg>
+                ค่าเช่าและค่าใช้จ่าย
+              </h2>
+              <div className="text-xl font-bold text-blue-700 flex items-baseline">
+                ฿{room.rent_price.toLocaleString()}
+                <span className="text-sm ml-1 text-gray-600">/ เดือน</span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex items-center bg-blue-100/50 p-3 rounded-lg border border-blue-200">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mr-3 text-blue-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                </svg>
+                <div>
+                  <div className="text-xs text-gray-600">ค่าน้ำ</div>
+                  <div className="font-bold text-blue-800">฿{room.water_price}<span className="text-xs font-normal ml-1">/ หน่วย</span></div>
+                </div>
+              </div>
+              
+              <div className="flex items-center bg-yellow-100/50 p-3 rounded-lg border border-yellow-200">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mr-3 text-yellow-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                <div>
+                  <div className="text-xs text-gray-600">ค่าไฟ</div>
+                  <div className="font-bold text-yellow-800">฿{room.electricity_price}<span className="text-xs font-normal ml-1">/ หน่วย</span></div>
+                </div>
+              </div>
+              
+              <div className="flex items-center bg-green-100/50 p-3 rounded-lg border border-green-200">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mr-3 text-green-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <div>
+                  <div className="text-xs text-gray-600">เงินมัดจำ</div>
+                  <div className="font-bold text-green-800">฿{room.deposit.toLocaleString()}</div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-          {/* ✅ จองห้อง */}
+          {/* Booking Form */}
           <form onSubmit={handleBookingSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">ชื่อ - นามสกุล</label>
-              <input
-                type="text"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                value={booking.name}
-                onChange={(e) => setBooking({ ...booking, name: e.target.value })}
-                required
-              />
+            {/* Full Name Field */}
+            <div className="group">
+              <label className="block text-sm font-medium text-blue-900 mb-1">ชื่อ - นามสกุล</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  className="pl-10 w-full rounded-lg border-blue-200 bg-blue-50 py-2.5 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 text-sm"
+                  value={booking.name}
+                  onChange={(e) => setBooking({ ...booking, name: e.target.value })}
+                  placeholder="กรุณากรอกชื่อและนามสกุล"
+                  required
+                />
+              </div>
             </div>
 
+            {/* Email and Phone in grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">อีเมล</label>
-                <input
-                  type="email"
-                  value={booking.email}
-                  onChange={(e) => setBooking({ ...booking, email: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  required
+              <div className="group">
+                <label className="block text-sm font-medium text-blue-900 mb-1">อีเมล</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                      <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="email"
+                    className="pl-10 w-full rounded-lg border-blue-200 bg-blue-50 py-2.5 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 text-sm"
+                    value={booking.email}
+                    onChange={(e) => setBooking({ ...booking, email: e.target.value })}
+                    placeholder="example@email.com"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="group">
+                <label className="block text-sm font-medium text-blue-900 mb-1">เบอร์โทร</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="tel"
+                    className="pl-10 w-full rounded-lg border-blue-200 bg-blue-50 py-2.5 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 text-sm"
+                    value={booking.phone}
+                    onChange={(e) => setBooking({ ...booking, phone: e.target.value })}
+                    placeholder="0XXXXXXXXX"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Check-in Date and Duration in grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Check-in Date */}
+              <div className="group">
+                <label className="block text-sm font-medium text-blue-900 mb-1">วันที่ต้องการเข้าพัก</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <input
+                    type="date"
+                    className="pl-10 w-full rounded-lg border-blue-200 bg-blue-50 py-2.5 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 text-sm"
+                    value={booking.check_in_date}
+                    onChange={(e) => setBooking({ ...booking, check_in_date: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Duration Dropdown */}
+              <div className="group">
+                <label className="block text-sm font-medium text-blue-900 mb-1">ระยะเวลาเข้าพัก</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <select
+                    className="pl-10 w-full rounded-lg border-blue-200 bg-blue-50 py-2.5 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 appearance-none text-sm"
+                    value={booking.duration}
+                    onChange={(e) => setBooking({ ...booking, duration: e.target.value })}
+                    required
+                  >
+                    <option value="" disabled>เลือกระยะเวลา</option>
+                    <option value="1">1 เดือน</option>
+                    <option value="3">3 เดือน</option>
+                    <option value="6">6 เดือน</option>
+                    <option value="12">12 เดือน</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Special Requests */}
+            <div className="group">
+              <label className="block text-sm font-medium text-blue-900 mb-1">คำขอเพิ่มเติม (ถ้ามี)</label>
+              <div className="relative">
+                <div className="absolute top-3 left-3 flex items-start pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <textarea
+                  rows="3"
+                  className="pl-10 w-full rounded-lg border-blue-200 bg-blue-50 py-2.5 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 text-sm"
+                  value={booking.special_requests}
+                  onChange={(e) => setBooking({ ...booking, special_requests: e.target.value })}
+                  placeholder="กรุณาระบุหากมีความต้องการพิเศษ"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">เบอร์โทร</label>
-                <input
-                  type="tel"
-                  value={booking.phone}
-                  onChange={(e) => setBooking({ ...booking, phone: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">วันที่ต้องการเข้าพัก</label>
-              <input
-                type="date"
-                value={booking.check_in_date}
-                onChange={(e) => setBooking({ ...booking, check_in_date: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">ระยะเวลาเข้าพัก (เดือน)</label>
-              <input
-                type="number"
-                min="1"
-                value={booking.duration}
-                onChange={(e) => setBooking({ ...booking, duration: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">คำขอเพิ่มเติม (ถ้ามี)</label>
-              <textarea
-                rows="3"
-                value={booking.special_requests}
-                onChange={(e) => setBooking({ ...booking, special_requests: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <button type="button" onClick={() => setIsOpenBooking(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
+            {/* Action Buttons with gradients */}
+            <div className="flex justify-end space-x-3 pt-2">
+              <button 
+                type="button" 
+                onClick={() => setIsOpenBooking(false)} 
+                className="px-4 py-2 bg-white text-blue-600 rounded-lg border border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition duration-200 font-medium text-sm"
+              >
                 ยกเลิก
               </button>
-              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+              <button 
+                type="submit" 
+                className="px-5 py-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg hover:from-blue-700 hover:to-blue-600 shadow-md hover:shadow-lg transition duration-200 font-medium flex items-center text-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
                 ยืนยันการจอง
               </button>
             </div>
           </form>
+          
+          {/* Decorative element */}
+          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 h-1 w-12 bg-blue-200 rounded-full"></div>
         </Dialog.Panel>
       </Transition.Child>
     </div>
