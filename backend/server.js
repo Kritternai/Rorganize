@@ -59,24 +59,43 @@ const authenticateToken = (req, res, next) => {
 // =============================================
 // ✅ API แก้ไขข้อมูลผู้เช่า (ต้องอยู่ก่อน /api/contracts)
 // =============================================
-app.put("/api/tenants/:id", authenticateToken, (req, res) => {
+app.put("/api/tenants/:id", authenticateToken, upload.any(), (req, res) => {
   const { id } = req.params;
-  const { fullname, email, phone, emergency_contact } = req.body;
-
+  const { fullname, email, phone, emergency_contact, vehicle_info } = req.body;
+ 
+  if (!fullname || !phone) {
+    return res.status(400).json({ error: "กรุณาระบุชื่อและเบอร์โทรศัพท์ของผู้เช่า" });
+  }
+ 
+  let documentFile = null;
+  if (req.files && req.files.length > 0) {
+    const docField = req.files.find(f => f.fieldname === "document");
+    documentFile = docField ? docField.filename : null;
+  }
+  if (!documentFile && req.body.existing_document) {
+    documentFile = req.body.existing_document;
+  }
+  // const documentFile = req.file ? req.file.filename : req.body.existing_document || null;
+ 
   const sql = `
     UPDATE tenants 
-    SET fullname = ?, email = ?, phone = ?, emergency_contact = ?
+    SET fullname = ?, email = ?, phone = ?, emergency_contact = ?, 
+        document = COALESCE(?, document), vehicle_info = ?
     WHERE id = ?
   `;
-
-  db.run(sql, [fullname, email, phone, emergency_contact, id], function (err) {
-    if (err) {
-      console.error("❌ ไม่สามารถอัปเดตผู้เช่า:", err.message);
-      return res.status(500).json({ error: "❌ อัปเดตข้อมูลผู้เช่าไม่สำเร็จ" });
+ 
+  db.run(
+    sql,
+    [fullname, email || "", phone, emergency_contact || "", documentFile, vehicle_info || "", id],
+    function (err) {
+      if (err) {
+        console.error("❌ ไม่สามารถอัปเดตผู้เช่า:", err.message);
+        return res.status(500).json({ error: "❌ อัปเดตข้อมูลผู้เช่าไม่สำเร็จ" });
+      }
+ 
+      res.json({ message: "✅ อัปเดตข้อมูลผู้เช่าสำเร็จ" });
     }
-
-    res.json({ message: "✅ อัปเดตข้อมูลผู้เช่าสำเร็จ" });
-  });
+  );
 });
 // ===================================================
 // User Authentication APIs

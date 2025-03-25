@@ -54,6 +54,8 @@ const createTables = () => {
       email TEXT UNIQUE NOT NULL COLLATE NOCASE,
       phone TEXT NOT NULL,
       emergency_contact TEXT COLLATE NOCASE,
+      document TEXT, -- เอกสารประจำตัว เช่น ไฟล์รูปหรือ PDF
+      vehicle_info TEXT, -- JSON ข้อมูลยานพาหนะ เช่น {"plate": "1กข1234", "type": "รถยนต์", "color": "ดำ"}
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);

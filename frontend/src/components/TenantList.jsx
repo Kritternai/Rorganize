@@ -96,9 +96,27 @@ const TenantManagement = () => {
   const saveEditTenant = async () => {
     try {
       const token = localStorage.getItem("admin_token");
-      await axios.put(`http://localhost:3001/api/tenants/${editTenant.id}`, editTenant, {
+      const formData = new FormData();
+      Object.entries(editTenant).forEach(([key, val]) => {
+        if (val !== undefined) {
+          formData.append(key, val);
+        }
+      });
+  
+      if (editTenant.documentFile) {
+        formData.append("document", editTenant.documentFile);
+      }
+  
+      formData.set("vehicle_info", JSON.stringify({
+        type: editTenant.vehicle_type,
+        plate: editTenant.vehicle_plate,
+        color: editTenant.vehicle_color
+      }));
+  
+      await axios.put(`http://localhost:3001/api/tenants/${editTenant.id}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
       });
   
@@ -111,7 +129,8 @@ const TenantManagement = () => {
       alert("ไม่สามารถบันทึกการแก้ไขผู้เช่าได้");
     }
   };
-
+  
+  
   return (
     <AdminSidebar>
       <div className="p-6 bg-gray-50 min-h-screen font-[Prompt]">
@@ -160,6 +179,8 @@ const TenantManagement = () => {
                     {field.replace("_", " ")}
                   </th>
                 ))}
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">เอกสาร</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">ยานพาหนะ</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">ห้องที่เช่า</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">เช่าตั้งแต่</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">สิ้นสุดสัญญา</th>
@@ -173,6 +194,25 @@ const TenantManagement = () => {
                   <td className="px-6 py-4">{tenant.phone}</td>
                   <td className="px-6 py-4">{tenant.email}</td>
                   <td className="px-6 py-4">{tenant.emergency_contact}</td>
+                  <td className="px-6 py-4">
+                    {tenant.document ? (
+                      <a href={`http://localhost:3001/uploads/${tenant.document}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        ดูเอกสาร
+                      </a>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    {tenant.vehicle_info ? (() => {
+                      try {
+                        const vehicle = JSON.parse(tenant.vehicle_info);
+                        return `${vehicle.type || ""} ${vehicle.plate || ""} (${vehicle.color || ""})`;
+                      } catch {
+                        return "-";
+                      }
+                    })() : "-"}
+                  </td>
                   {(() => {
                     const currentContract = contracts.find(c => c.tenant_id === tenant.id && c.status === 'active');
                     return (
@@ -245,7 +285,7 @@ const TenantManagement = () => {
                 <label key={field} className="block mb-2 capitalize">
                   {field.replace("_", " ")}:
                   <input
-                    type={field === "emergency_contact" ? "text" : "text"}
+                    type="text"
                     name={field}
                     value={editTenant[field]}
                     onChange={handleEditChange}
@@ -253,6 +293,50 @@ const TenantManagement = () => {
                   />
                 </label>
               ))}
+              <label className="block mb-2">
+                เอกสารประจำตัว (PDF):
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) =>
+                    setEditTenant((prev) => ({
+                      ...prev,
+                      documentFile: e.target.files[0],
+                    }))
+                  }
+                  className="w-full p-2 border rounded"
+                />
+              </label>
+              <label className="block mb-2">
+                ประเภทยานพาหนะ:
+                <input
+                  type="text"
+                  name="vehicle_type"
+                  value={editTenant.vehicle_type || ""}
+                  onChange={handleEditChange}
+                  className="w-full p-2 border rounded"
+                />
+              </label>
+              <label className="block mb-2">
+                ทะเบียน:
+                <input
+                  type="text"
+                  name="vehicle_plate"
+                  value={editTenant.vehicle_plate || ""}
+                  onChange={handleEditChange}
+                  className="w-full p-2 border rounded"
+                />
+              </label>
+              <label className="block mb-2">
+                สี:
+                <input
+                  type="text"
+                  name="vehicle_color"
+                  value={editTenant.vehicle_color || ""}
+                  onChange={handleEditChange}
+                  className="w-full p-2 border rounded"
+                />
+              </label>
               <div className="flex justify-end space-x-2 mt-4">
                 <button className="px-4 py-2 bg-gray-200 rounded" onClick={closeEditModal}>
                   ยกเลิก
