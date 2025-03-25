@@ -682,8 +682,8 @@ app.post("/api/checkin", upload.array("roomPhotos"), (req, res) => {
     const params = [
       tenantName,
       contractId,
-      parseFloat(waterMeter),
-      parseFloat(electricityMeter),
+      parseFloat(waterMeter) || 0,
+      parseFloat(electricityMeter) || 0,
       keyCardDelivered === "true" ? 1 : 0,
       assetNote,
       rulesAcknowledged === "true" ? 1 : 0,
@@ -702,7 +702,26 @@ app.post("/api/checkin", upload.array("roomPhotos"), (req, res) => {
     });
   });
 });
+/**
+ * API ดึงข้อมูลการเช็คอินทั้งหมด
+ * GET /api/checkin
+ */
+app.get("/api/checkin", authenticateToken, (req, res) => {
+  db.all("SELECT * FROM checkins ORDER BY created_at DESC", [], (err, rows) => {
+    if (err) {
+      console.error("❌ Error fetching check-ins:", err.message);
+      return res.status(500).json({ error: "ไม่สามารถดึงข้อมูลเช็คอินได้" });
+    }
 
+    // แปลงข้อมูลรูปภาพจาก JSON string → array
+    const formatted = rows.map((row) => ({
+      ...row,
+      room_photos: row.room_photos ? JSON.parse(row.room_photos) : [],
+    }));
+
+    res.json(formatted);
+  });
+});
 // ===================================================
 // Start Server
 // ===================================================

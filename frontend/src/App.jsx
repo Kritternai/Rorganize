@@ -74,7 +74,7 @@ function App() {
     <Route path="/admin/bookings" element={<AdminBookingList token={adminToken} />} />
     <Route path="/admin/contracts" element={<RentalContract token={adminToken}/>} />
     <Route path="/admin/contracts/:roomId" element={<RentalContract token={adminToken} />} />
-    <Route path="/admin/checkin" element={<CheckInManagement token={adminToken} />} />
+    <Route path="/admin/checkin" element={<CheckInManagement token={localStorage.getItem("admin_token")} />} />
     <Route path="/admin/checkout" element={<CheckOutManagement token={adminToken} />} />
     <Route path="/admin/tenants" element={<TenantList token={adminToken} />} />
   </Routes>
