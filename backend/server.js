@@ -30,12 +30,10 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = "uploads";
-    // สร้างโฟลเดอร์ uploads ถ้ายังไม่มี
     if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    // กำหนดชื่อไฟล์ด้วย timestamp + นามสกุลไฟล์เดิม
     cb(null, Date.now() + path.extname(file.originalname));
   },
 });
@@ -58,6 +56,28 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+// =============================================
+// ✅ API แก้ไขข้อมูลผู้เช่า (ต้องอยู่ก่อน /api/contracts)
+// =============================================
+app.put("/api/tenants/:id", authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { fullname, email, phone, emergency_contact } = req.body;
+
+  const sql = `
+    UPDATE tenants 
+    SET fullname = ?, email = ?, phone = ?, emergency_contact = ?
+    WHERE id = ?
+  `;
+
+  db.run(sql, [fullname, email, phone, emergency_contact, id], function (err) {
+    if (err) {
+      console.error("❌ ไม่สามารถอัปเดตผู้เช่า:", err.message);
+      return res.status(500).json({ error: "❌ อัปเดตข้อมูลผู้เช่าไม่สำเร็จ" });
+    }
+
+    res.json({ message: "✅ อัปเดตข้อมูลผู้เช่าสำเร็จ" });
+  });
+});
 // ===================================================
 // User Authentication APIs
 // ===================================================
@@ -472,7 +492,6 @@ app.put("/api/contracts/:id/status", authenticateToken, (req, res) => {
     res.json({ message: "✅ อัปเดตสถานะสัญญาเช่าสำเร็จ" });
   });
 });
-
 /**
  * API ดึงข้อมูลสัญญาเช่าทั้งหมด
  * GET /api/contracts

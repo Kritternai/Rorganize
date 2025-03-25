@@ -1,36 +1,72 @@
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 import AdminSidebar from "./AdminSidebar";
+import { RefreshCw, Users, Search, AlertTriangle } from "lucide-react";
 
 const TenantManagement = () => {
   const [tenants, setTenants] = useState([]);
+  const [contracts, setContracts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortField, setSortField] = useState("fullname");
+  const [sortDirection, setSortDirection] = useState("asc");
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editTenant, setEditTenant] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
-    const mockTenants = [
-      {
-        id: 1,
-        full_name: "John Doe",
-        phone: "012-345-6789",
-        email: "john@example.com",
-        rental_history: "2 years",
-        behavior: "Good",
-        complaints: 0,
-      },
-      {
-        id: 2,
-        full_name: "Jane Smith",
-        phone: "987-654-3210",
-        email: "jane@example.com",
-        rental_history: "1 year",
-        behavior: "Average",
-        complaints: 1,
-      },
-    ];
-    setTenants(mockTenants);
+    const fetchTenants = async () => {
+      try {
+        const token = localStorage.getItem("admin_token");
+        const res = await axios.get("http://localhost:3001/api/tenants", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setTenants(res.data || []);
+      } catch (err) {
+        console.error("❌ Error fetching tenants:", err);
+      }
+    };
+
+    const fetchContracts = async () => {
+      try {
+        const token = localStorage.getItem("admin_token");
+        const res = await axios.get("http://localhost:3001/api/contracts", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setContracts(res.data || []);
+      } catch (err) {
+        console.error("❌ Error fetching contracts:", err);
+      }
+    };
+
+    fetchTenants();
+    fetchContracts();
   }, []);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const sortedTenants = [...tenants].sort((a, b) => {
+    let aVal = a[sortField] || "";
+    let bVal = b[sortField] || "";
+    return sortDirection === "asc"
+      ? aVal.toString().localeCompare(bVal)
+      : bVal.toString().localeCompare(aVal);
+  });
+
+  const filteredTenants = sortedTenants.filter((t) =>
+    (t.fullname || "").toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const openModal = (tenant) => {
     setSelectedTenant(tenant);
@@ -54,81 +90,144 @@ const TenantManagement = () => {
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
-    setEditTenant(prev => ({ ...prev, [name]: value }));
+    setEditTenant((prev) => ({ ...prev, [name]: value }));
   };
 
-  const saveEditTenant = () => {
-    setTenants(prev =>
-      prev.map(t => (t.id === editTenant.id ? editTenant : t))
-    );
-    closeEditModal();
+  const saveEditTenant = async () => {
+    try {
+      const token = localStorage.getItem("admin_token");
+      await axios.put(`http://localhost:3001/api/tenants/${editTenant.id}`, editTenant, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      setTenants((prev) =>
+        prev.map((t) => (t.id === editTenant.id ? editTenant : t))
+      );
+      closeEditModal();
+    } catch (err) {
+      console.error("❌ Error updating tenant:", err);
+      alert("ไม่สามารถบันทึกการแก้ไขผู้เช่าได้");
+    }
   };
 
   return (
     <AdminSidebar>
-      <div className="p-5">
-        <h1 className="text-2xl font-bold mb-4">👥 จัดการผู้เช่า</h1>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h2 className="text-lg font-semibold">ผู้เช่าทั้งหมด</h2>
-            <p className="text-2xl">{tenants.length}</p>
+      <div className="p-6 bg-gray-50 min-h-screen font-[Prompt]">
+        {/* Header */}
+        <header className="bg-white shadow-md p-6 rounded-xl flex justify-between items-center mb-8">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-1">👥 จัดการผู้เช่า</h2>
+            <p className="text-gray-500">ดูข้อมูลและจัดการผู้เช่าในระบบ</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h2 className="text-lg font-semibold">ผู้เช่าปัจจุบัน</h2>
-            <p className="text-2xl">{tenants.filter(t => t.complaints === 0).length}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h2 className="text-lg font-semibold">ผู้เช่าที่เคยอยู่</h2>
-            <p className="text-2xl">{tenants.filter(t => t.rental_history).length}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h2 className="text-lg font-semibold">ผู้เช่าที่มีการร้องเรียน</h2>
-            <p className="text-2xl">{tenants.filter(t => t.complaints > 0).length}</p>
+          <button className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+            <RefreshCw size={18} className="mr-2" /> รีเฟรช
+          </button>
+        </header>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <StatCard label="ผู้เช่าทั้งหมด" count={tenants.length} />
+          <StatCard label="ผู้เช่าปัจจุบัน" count={tenants.filter(t => t.emergency_contact).length} />
+        </div>
+
+        {/* Search */}
+        <div className="bg-white p-4 rounded-xl shadow mb-6">
+          <div className="relative max-w-md">
+            <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
+            <input
+              type="text"
+              className="w-full pl-10 p-2.5 border border-gray-300 rounded-lg"
+              placeholder="ค้นหาผู้เช่า..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
 
-        <table className="min-w-full bg-white border border-gray-200">
-          <thead>
-            <tr>
-              <th className="py-2 px-4 border-b">ชื่อผู้เช่า</th>
-              <th className="py-2 px-4 border-b">เบอร์โทร</th>
-              <th className="py-2 px-4 border-b">อีเมล</th>
-              <th className="py-2 px-4 border-b">ประวัติการเช่า</th>
-              <th className="py-2 px-4 border-b">พฤติกรรม</th>
-              <th className="py-2 px-4 border-b">การร้องเรียน</th>
-              <th className="py-2 px-4 border-b">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tenants.map((tenant) => (
-              <tr key={tenant.id}>
-                <td className="py-2 px-4 border-b">{tenant.full_name}</td>
-                <td className="py-2 px-4 border-b">{tenant.phone}</td>
-                <td className="py-2 px-4 border-b">{tenant.email}</td>
-                <td className="py-2 px-4 border-b">{tenant.rental_history}</td>
-                <td className="py-2 px-4 border-b">{tenant.behavior}</td>
-                <td className="py-2 px-4 border-b">{tenant.complaints}</td>
-                <td className="py-2 px-4 border-b">
-                  <button className="text-blue-500 hover:underline" onClick={() => openEditModal(tenant)}>แก้ไข</button>
-                  <button className="text-blue-500 hover:underline ml-2" onClick={() => openModal(tenant)}>ดูรายละเอียด</button>
-                </td>
+        {/* Table */}
+        <div className="bg-white shadow-md rounded-xl overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                {["fullname", "phone", "email", "emergency_contact"].map((field) => (
+                  <th
+                    key={field}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                    onClick={() => handleSort(field)}
+                  >
+                    {field.replace("_", " ")}
+                  </th>
+                ))}
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">ห้องที่เช่า</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">เช่าตั้งแต่</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">สิ้นสุดสัญญา</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">จัดการ</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredTenants.map((tenant) => (
+                <tr key={tenant.id}>
+                  <td className="px-6 py-4">{tenant.fullname}</td>
+                  <td className="px-6 py-4">{tenant.phone}</td>
+                  <td className="px-6 py-4">{tenant.email}</td>
+                  <td className="px-6 py-4">{tenant.emergency_contact}</td>
+                  {(() => {
+                    const currentContract = contracts.find(c => c.tenant_id === tenant.id && c.status === 'active');
+                    return (
+                      <>
+                        <td className="px-6 py-4">{currentContract ? currentContract.room_id : '-'}</td>
+                        <td className="px-6 py-4">{currentContract ? new Date(currentContract.start_date).toLocaleDateString() : '-'}</td>
+                        <td className="px-6 py-4">{currentContract ? new Date(currentContract.end_date).toLocaleDateString() : '-'}</td>
+                      </>
+                    );
+                  })()}
+                  <td className="px-6 py-4 space-x-2">
+                    <button
+                      className="text-blue-600 hover:underline"
+                      onClick={() => openEditModal(tenant)}
+                    >
+                      แก้ไข
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filteredTenants.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="text-center py-6 text-gray-400">
+                    <AlertTriangle className="mx-auto mb-2" /> ไม่พบผู้เช่าที่ตรงกับการค้นหา
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
+        {/* Modal */}
         {showModal && selectedTenant && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-              <h2 className="text-xl font-bold mb-4">รายละเอียดผู้เช่า</h2>
-              <p><strong>ชื่อ:</strong> {selectedTenant.full_name}</p>
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+              <h2 className="text-xl font-semibold mb-4">📋 รายละเอียดผู้เช่า</h2>
+              <p><strong>ชื่อ:</strong> {selectedTenant.fullname}</p>
               <p><strong>เบอร์โทร:</strong> {selectedTenant.phone}</p>
               <p><strong>อีเมล:</strong> {selectedTenant.email}</p>
-              <p><strong>ประวัติการเช่า:</strong> {selectedTenant.rental_history}</p>
-              <p><strong>พฤติกรรม:</strong> {selectedTenant.behavior}</p>
-              <p><strong>การร้องเรียน:</strong> {selectedTenant.complaints}</p>
+              <p><strong>ผู้ติดต่อฉุกเฉิน:</strong> {selectedTenant.emergency_contact}</p>
+              {(() => {
+                const currentContract = contracts.find(c => c.tenant_id === selectedTenant.id && c.status === 'active');
+                if (currentContract) {
+                  return (
+                    <>
+                      <p><strong>ห้องที่เช่า:</strong> {currentContract.room_id}</p>
+                      <p><strong>เช่าตั้งแต่:</strong> {new Date(currentContract.start_date).toLocaleDateString()}</p>
+                      <p><strong>สิ้นสุดสัญญา:</strong> {new Date(currentContract.end_date).toLocaleDateString()}</p>
+                    </>
+                  );
+                }
+                return <p><strong>สถานะ:</strong> ไม่มีการเช่าอยู่ในขณะนี้</p>;
+              })()}
               <button
-                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg"
                 onClick={closeModal}
               >
                 ปิด
@@ -136,46 +235,50 @@ const TenantManagement = () => {
             </div>
           </div>
         )}
-      </div>
 
-      {showEditModal && editTenant && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">แก้ไขข้อมูลผู้เช่า</h2>
-            <label className="block mb-2">
-              ชื่อ:
-              <input type="text" name="full_name" value={editTenant.full_name} onChange={handleEditChange} className="w-full p-2 border rounded" />
-            </label>
-            <label className="block mb-2">
-              เบอร์โทร:
-              <input type="text" name="phone" value={editTenant.phone} onChange={handleEditChange} className="w-full p-2 border rounded" />
-            </label>
-            <label className="block mb-2">
-              อีเมล:
-              <input type="email" name="email" value={editTenant.email} onChange={handleEditChange} className="w-full p-2 border rounded" />
-            </label>
-            <label className="block mb-2">
-              ประวัติการเช่า:
-              <input type="text" name="rental_history" value={editTenant.rental_history} onChange={handleEditChange} className="w-full p-2 border rounded" />
-            </label>
-            <label className="block mb-2">
-              พฤติกรรม:
-              <input type="text" name="behavior" value={editTenant.behavior} onChange={handleEditChange} className="w-full p-2 border rounded" />
-            </label>
-            <label className="block mb-2">
-              การร้องเรียน:
-              <input type="number" name="complaints" value={editTenant.complaints} onChange={handleEditChange} className="w-full p-2 border rounded" />
-            </label>
-            <div className="mt-4 flex justify-end">
-              <button onClick={saveEditTenant} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mr-2">บันทึก</button>
-              <button onClick={closeEditModal} className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">ยกเลิก</button>
+        {/* Edit Modal */}
+        {showEditModal && editTenant && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+              <h2 className="text-xl font-semibold mb-4">📝 แก้ไขผู้เช่า</h2>
+              {["fullname", "phone", "email", "emergency_contact"].map((field) => (
+                <label key={field} className="block mb-2 capitalize">
+                  {field.replace("_", " ")}:
+                  <input
+                    type={field === "emergency_contact" ? "text" : "text"}
+                    name={field}
+                    value={editTenant[field]}
+                    onChange={handleEditChange}
+                    className="w-full p-2 border rounded"
+                  />
+                </label>
+              ))}
+              <div className="flex justify-end space-x-2 mt-4">
+                <button className="px-4 py-2 bg-gray-200 rounded" onClick={closeEditModal}>
+                  ยกเลิก
+                </button>
+                <button className="px-4 py-2 bg-green-500 text-white rounded" onClick={saveEditTenant}>
+                  บันทึก
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-
+        )}
+      </div>
     </AdminSidebar>
   );
 };
+
+const StatCard = ({ label, count }) => (
+  <div className="bg-white p-4 rounded-lg shadow flex items-center justify-between">
+    <div>
+      <p className="text-sm text-gray-500">{label}</p>
+      <p className="text-xl font-bold">{count}</p>
+    </div>
+    <div className="bg-gray-100 p-2 rounded-full">
+      <Users size={20} className="text-gray-500" />
+    </div>
+  </div>
+);
 
 export default TenantManagement;
