@@ -159,7 +159,25 @@ db.run(`
       FOREIGN KEY (user_id) REFERENCES users(id)
     )
   `);
-
+ 
+  // 🔹 ตารางการเข้าพัก (Check-in)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS checkins (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tenant_name TEXT NOT NULL,
+      contract_id TEXT NOT NULL,
+      water_meter REAL NOT NULL,
+      electricity_meter REAL NOT NULL,
+      keycard_delivered INTEGER DEFAULT 0,
+      asset_note TEXT,
+      rules_acknowledged INTEGER DEFAULT 0,
+      property_condition TEXT,
+      room_photos TEXT,
+      handover_note TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+ 
   console.log("✅ ตารางทั้งหมดถูกสร้างเรียบร้อย!");
   initializeAdmin();
 };

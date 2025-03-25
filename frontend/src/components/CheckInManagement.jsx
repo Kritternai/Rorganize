@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ClipboardList, KeyRound, Camera, FileText, Home, CheckSquare } from "lucide-react";
+import axios from "axios";
 import AdminSidebar from "./AdminSidebar";
 import "@fontsource/prompt";
 
@@ -32,10 +33,33 @@ const CheckInManagement = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("📦 ข้อมูลการเข้าพัก:", form);
-    alert("✅ บันทึกข้อมูลการเข้าพักสำเร็จ!");
+
+    try {
+      const formData = new FormData();
+
+      formData.append("tenantName", form.tenantName);
+      formData.append("contractId", form.contractId);
+      formData.append("waterMeter", form.waterMeter);
+      formData.append("electricityMeter", form.electricityMeter);
+      formData.append("keyCardDelivered", form.keyCardDelivered.toString());
+      formData.append("assetNote", form.assetNote);
+      formData.append("rulesAcknowledged", form.rulesAcknowledged.toString());
+      formData.append("propertyCondition", form.propertyCondition);
+      formData.append("handoverNote", form.handoverNote);
+
+      form.roomPhotos.forEach((photo) => {
+        formData.append("roomPhotos", photo);
+      });
+
+      const response = await axios.post("http://localhost:3001/api/checkin", formData);
+      alert("✅ " + response.data.message);
+      console.log("📥 Response:", response.data);
+    } catch (error) {
+      console.error("❌ Error submitting form:", error);
+      alert("❌ เกิดข้อผิดพลาดในการส่งข้อมูล");
+    }
   };
 
   return (

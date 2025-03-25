@@ -631,6 +631,79 @@ app.post("/api/checkout", authenticateToken, (req, res) => {
 });
 
 // ===================================================
+// Check-in Management API
+// ===================================================
+app.post("/api/checkin", upload.array("roomPhotos"), (req, res) => {
+  const {
+    tenantName,
+    contractId,
+    waterMeter,
+    electricityMeter,
+    keyCardDelivered,
+    assetNote,
+    rulesAcknowledged,
+    propertyCondition,
+    handoverNote,
+  } = req.body;
+
+  const roomPhotos = req.files.map((file) => file.filename);
+
+  const sql = `
+    CREATE TABLE IF NOT EXISTS checkins (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tenant_name TEXT NOT NULL,
+      contract_id TEXT NOT NULL,
+      water_meter REAL NOT NULL,
+      electricity_meter REAL NOT NULL,
+      keycard_delivered INTEGER DEFAULT 0,
+      asset_note TEXT,
+      rules_acknowledged INTEGER DEFAULT 0,
+      property_condition TEXT,
+      room_photos TEXT,
+      handover_note TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+
+  db.run(sql, [], (err) => {
+    if (err) {
+      console.error("❌ Error creating checkins table:", err.message);
+      return res.status(500).json({ error: "Database table creation failed" });
+    }
+
+    const insertSql = `
+      INSERT INTO checkins (
+        tenant_name, contract_id, water_meter, electricity_meter,
+        keycard_delivered, asset_note, rules_acknowledged,
+        property_condition, room_photos, handover_note
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const params = [
+      tenantName,
+      contractId,
+      parseFloat(waterMeter),
+      parseFloat(electricityMeter),
+      keyCardDelivered === "true" ? 1 : 0,
+      assetNote,
+      rulesAcknowledged === "true" ? 1 : 0,
+      propertyCondition,
+      JSON.stringify(roomPhotos),
+      handoverNote,
+    ];
+
+    db.run(insertSql, params, function (err) {
+      if (err) {
+        console.error("❌ Error inserting check-in:", err.message);
+        return res.status(500).json({ error: "Insert failed" });
+      }
+
+      res.status(201).json({ message: "✅ บันทึกข้อมูลการเข้าพักสำเร็จ", id: this.lastID });
+    });
+  });
+});
+
+// ===================================================
 // Start Server
 // ===================================================
 app.listen(port, () => {

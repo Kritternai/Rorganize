@@ -28,6 +28,7 @@ import AdminBookingList from "./components/AdminBookingList";
 import RentalContract from "./components/RentalContract";
 import CheckInManagement from "./components/CheckInManagement";
 import CheckOutManagement from "./components/CheckOutManagement";
+import TenantList from "./components/TenantList";
 // Uncomment and update if needed
 //import RoomListStatus from "./components/RoomListStatus";
 
@@ -75,6 +76,7 @@ function App() {
     <Route path="/admin/contracts/:roomId" element={<RentalContract token={adminToken} />} />
     <Route path="/admin/checkin" element={<CheckInManagement token={adminToken} />} />
     <Route path="/admin/checkout" element={<CheckOutManagement token={adminToken} />} />
+    <Route path="/admin/tenants" element={<TenantList token={adminToken} />} />
   </Routes>
 </Router>
   );
