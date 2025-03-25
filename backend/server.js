@@ -620,6 +620,16 @@ app.get("/api/admin/dashboard", authenticateToken, (req, res) => {
   );
 });
 
+app.post("/api/checkout", authenticateToken, (req, res) => {
+  const {
+    inspection_date, damage_note, water_meter, electricity_meter,
+    outstanding_costs, refund_note, deduction, total_refund
+  } = req.body;
+
+  // TODO: INSERT INTO checkout table
+  res.status(201).json({ message: "📦 บันทึกข้อมูลการย้ายออกสำเร็จ" });
+});
+
 // ===================================================
 // Start Server
 // ===================================================
