@@ -622,12 +622,127 @@ app.get("/api/admin/dashboard", authenticateToken, (req, res) => {
 
 app.post("/api/checkout", authenticateToken, (req, res) => {
   const {
-    inspection_date, damage_note, water_meter, electricity_meter,
-    outstanding_costs, refund_note, deduction, total_refund
+    contract_id,
+    inspection_date,
+    water_meter,
+    electricity_meter,
+    damage_note,
+    outstanding_costs,
+    refund_note,
+    deduction,
+    total_refund
   } = req.body;
 
-  // TODO: INSERT INTO checkout table
-  res.status(201).json({ message: "📦 บันทึกข้อมูลการย้ายออกสำเร็จ" });
+  const sql = `
+    INSERT INTO checkouts (
+      contract_id,
+      inspection_date,
+      water_meter,
+      electricity_meter,
+      damage_note,
+      outstanding_costs,
+      refund_note,
+      deduction,
+      total_refund
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  const params = [
+    contract_id,
+    inspection_date,
+    parseFloat(water_meter) || 0,
+    parseFloat(electricity_meter) || 0,
+    damage_note,
+    parseFloat(outstanding_costs) || 0,
+    refund_note,
+    parseFloat(deduction) || 0,
+    parseFloat(total_refund) || 0
+  ];
+
+  db.run(sql, params, function (err) {
+    if (err) {
+      console.error("❌ ไม่สามารถบันทึกข้อมูลการย้ายออก:", err.message);
+      return res.status(500).json({ error: "❌ บันทึกข้อมูลไม่สำเร็จ" });
+    }
+
+    // อัปเดตสถานะห้องเป็น maintenance
+    db.run(`
+      UPDATE rooms 
+      SET status = 'maintenance' 
+      WHERE id = (SELECT room_id FROM contracts WHERE id = ?)
+    `, [contract_id], function (err) {
+      if (err) {
+        console.error("❌ ไม่สามารถอัปเดตสถานะห้อง:", err.message);
+        return res.status(500).json({ error: "❌ บันทึกการย้ายออกสำเร็จ แต่เปลี่ยนสถานะห้องไม่สำเร็จ" });
+      }
+
+      // รีเซ็ตข้อมูลที่เกี่ยวข้องกับห้องนี้ทั้งหมด ยกเว้นข้อมูลห้อง
+      db.get("SELECT room_id FROM contracts WHERE id = ?", [contract_id], (err, row) => {
+        if (err || !row) {
+          console.error("❌ ไม่สามารถดึง room_id สำหรับรีเซ็ตข้อมูล:", err?.message);
+          return res.status(500).json({ error: "❌ รีเซ็ตข้อมูลล้มเหลว" });
+        }
+
+        const roomId = row.room_id;
+
+        // ลบข้อมูลใน contracts, payments, bookings, checkins, utility_bills
+        db.serialize(() => {
+          db.all("SELECT * FROM contracts WHERE room_id = ?", [roomId], (err, rows) => {
+            if (!err && rows.length) {
+              db.run("INSERT INTO backups (table_name, data) VALUES (?, ?)", [
+                "contracts",
+                JSON.stringify(rows)
+              ]);
+            }
+          });
+          db.run("DELETE FROM contracts WHERE room_id = ?", [roomId]);
+          db.all("SELECT * FROM payments WHERE contract_id = ?", [contract_id], (err, rows) => {
+            if (!err && rows.length) {
+              db.run("INSERT INTO backups (table_name, data) VALUES (?, ?)", [
+                "payments",
+                JSON.stringify(rows)
+              ]);
+            }
+          });
+          db.run("DELETE FROM payments WHERE contract_id = ?", [contract_id]);
+          db.all("SELECT * FROM bookings WHERE room_id = ?", [roomId], (err, rows) => {
+            if (!err && rows.length) {
+              db.run("INSERT INTO backups (table_name, data) VALUES (?, ?)", [
+                "bookings",
+                JSON.stringify(rows)
+              ]);
+            }
+          });
+          db.run("DELETE FROM bookings WHERE room_id = ?", [roomId]);
+          db.all("SELECT * FROM checkins WHERE contract_id = ?", [contract_id], (err, rows) => {
+            if (!err && rows.length) {
+              db.run("INSERT INTO backups (table_name, data) VALUES (?, ?)", [
+                "checkins",
+                JSON.stringify(rows)
+              ]);
+            }
+          });
+          db.run("DELETE FROM checkins WHERE contract_id = ?", [contract_id]);
+          db.all("SELECT * FROM utility_bills WHERE contract_id = ?", [contract_id], (err, rows) => {
+            if (!err && rows.length) {
+              db.run("INSERT INTO backups (table_name, data) VALUES (?, ?)", [
+                "utility_bills",
+                JSON.stringify(rows)
+              ]);
+            }
+          });
+          db.run("DELETE FROM utility_bills WHERE contract_id = ?", [contract_id], (err) => {
+            if (err) {
+              console.error("❌ ไม่สามารถล้างข้อมูลทั้งหมดได้:", err.message);
+              return res.status(500).json({ error: "❌ ล้างข้อมูลล้มเหลว" });
+            }
+
+            res.status(201).json({ message: "📦 บันทึกการย้ายออกและล้างข้อมูลสำเร็จ", id: this.lastID });
+          });
+        });
+      });
+    });
+  });
 });
 
 // ===================================================
@@ -722,6 +837,23 @@ app.get("/api/checkin", authenticateToken, (req, res) => {
     res.json(formatted);
   });
 });
+
+
+/**
+ * API ดึงข้อมูลการย้ายออกทั้งหมด
+ * GET /api/checkout
+ */
+app.get("/api/checkout", authenticateToken, (req, res) => {
+  db.all("SELECT * FROM checkouts ORDER BY created_at DESC", [], (err, rows) => {
+    if (err) {
+      console.error("❌ ไม่สามารถดึงข้อมูลการย้ายออก:", err.message);
+      return res.status(500).json({ error: "ไม่สามารถดึงข้อมูลการย้ายออกได้" });
+    }
+
+    res.json(rows);
+  });
+});
+
 // ===================================================
 // Start Server
 // ===================================================

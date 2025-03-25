@@ -177,7 +177,34 @@ db.run(`
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
- 
+  
+  // 🔹 ตารางการย้ายออก (Checkout)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS checkouts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      contract_id INTEGER NOT NULL,
+      inspection_date DATE NOT NULL,
+      water_meter REAL,
+      electricity_meter REAL,
+      damage_note TEXT,
+      outstanding_costs REAL,
+      refund_note TEXT,
+      deduction REAL,
+      total_refund REAL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (contract_id) REFERENCES contracts(id)
+    )
+  `);
+  
+  db.run(`
+    CREATE TABLE IF NOT EXISTS backups (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      table_name TEXT NOT NULL,
+      data TEXT NOT NULL,
+      deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  
   console.log("✅ ตารางทั้งหมดถูกสร้างเรียบร้อย!");
   initializeAdmin();
 };
