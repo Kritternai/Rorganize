@@ -79,7 +79,20 @@ const TenantManagement = () => {
   };
 
   const openEditModal = (tenant) => {
-    setEditTenant({ ...tenant });
+    let vehicle = {};
+    try {
+      vehicle = tenant.vehicle_info ? JSON.parse(tenant.vehicle_info) : {};
+    } catch (e) {
+      console.warn("❌ Vehicle info parsing error:", e);
+    }
+
+    setEditTenant({
+      ...tenant,
+      vehicle_type: vehicle.type || "",
+      vehicle_plate: vehicle.plate || "",
+      vehicle_color: vehicle.color || "",
+      documentFile: null,
+    });
     setShowEditModal(true);
   };
 
