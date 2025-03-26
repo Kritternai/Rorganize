@@ -103,29 +103,6 @@ app.post("/api/utility-bills", authenticateToken, (req, res) => {
   });
 });
 
-app.get("/api/user/dashboard", authenticateToken, (req, res) => {
-  const username = req.user.username;
-
-  db.get(`
-    SELECT c.*, r.room_number, r.type, r.floor, r.size, r.rent_price, r.status, t.fullname
-    FROM users u
-    JOIN tenants t ON t.email = u.username
-    JOIN contracts c ON c.tenant_id = t.id
-    JOIN rooms r ON c.room_id = r.id
-    WHERE u.username = ?
-    ORDER BY c.start_date DESC
-    LIMIT 1
-  `, [username], (err, row) => {
-    if (err) {
-      console.error("❌ ไม่สามารถดึงข้อมูลผู้ใช้:", err.message);
-      return res.status(500).json({ error: "ไม่สามารถดึงข้อมูลผู้ใช้ได้" });
-    }
-
-    if (!row) return res.status(404).json({ message: "ไม่พบข้อมูลการเช่า" });
-
-    res.json(row);
-  });
-});
 
 /**
  * API ดึงข้อมูลบิลค่าน้ำ-ค่าไฟ
@@ -193,21 +170,68 @@ app.put("/api/tenants/:id", authenticateToken, upload.any(), (req, res) => {
  * API ลงทะเบียนผู้ใช้งานใหม่
  * POST /api/register
  * 
- * Body: { username, password, role }
+ * Body: { username, password }
  * Response: สถานะการลงทะเบียน
  */
 app.post("/api/register", async (req, res) => {
-  const { username, password, role } = req.body;
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const { username, password } = req.body;
+  const role = "user"; // Force role to 'user'
 
-  db.run(
-    "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-    [username, hashedPassword, role],
-    function (err) {
-      if (err) return res.status(400).json({ error: "ชื่อผู้ใช้ซ้ำหรือข้อมูลผิดพลาด" });
-      res.status(201).json({ message: "✅ ลงทะเบียนสำเร็จ" });
-    }
-  );
+  if (!username || !password) {
+    return res.status(400).json({ error: "กรุณาระบุชื่อผู้ใช้และรหัสผ่าน" });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    db.run(
+      "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+      [username, hashedPassword, role],
+      function (err) {
+        if (err) {
+          console.error("❌ เพิ่มผู้ใช้ล้มเหลว:", err.message);
+          return res.status(400).json({ error: "ชื่อผู้ใช้ซ้ำหรือข้อมูลผิดพลาด" });
+        }
+
+        const userId = this.lastID;
+ 
+        // ดึงเลขห้องจากชื่อผู้ใช้ เช่น "room101"
+        const roomNumberMatch = username.match(/^room(\d+)$/i);
+        if (!roomNumberMatch) {
+          return res.status(400).json({ error: "ชื่อผู้ใช้ต้องอยู่ในรูปแบบ room[หมายเลข]" });
+        }
+        const roomNumber = roomNumberMatch[1];
+ 
+        // ค้นหา tenant ที่มีสัญญาเช่ากับห้องนี้
+        db.get(`
+          SELECT t.id FROM tenants t
+          JOIN contracts c ON c.tenant_id = t.id
+          JOIN rooms r ON c.room_id = r.id
+          WHERE r.room_number = ?
+          ORDER BY c.start_date DESC
+          LIMIT 1
+        `, [roomNumber], (err2, tenant) => {
+          if (err2 || !tenant) {
+            console.error("❌ ไม่พบ tenant สำหรับห้อง:", err2?.message || "ไม่พบผู้เช่า");
+            return res.status(500).json({ error: "เพิ่มผู้ใช้สำเร็จ แต่ไม่สามารถผูก tenant ได้" });
+          }
+ 
+          // อัปเดต tenant ให้ผูก user_id
+          db.run("UPDATE tenants SET user_id = ? WHERE id = ?", [userId, tenant.id], (err3) => {
+            if (err3) {
+              console.error("❌ ไม่สามารถอัปเดต tenant:", err3.message);
+              return res.status(500).json({ error: "เพิ่มผู้ใช้สำเร็จ แต่ผูก tenant ไม่สำเร็จ" });
+            }
+ 
+            res.status(201).json({ message: "✅ เพิ่มผู้ใช้และเชื่อม tenant สำเร็จ", id: userId });
+          });
+        });
+      }
+    );
+  } catch (err) {
+    console.error("❌ เกิดข้อผิดพลาดในการเข้ารหัสรหัสผ่าน:", err.message);
+    res.status(500).json({ error: "❌ ไม่สามารถเพิ่มผู้ใช้ได้" });
+  }
 });
 
 /**
@@ -1131,6 +1155,42 @@ app.put("/api/users/:id", authenticateToken, async (req, res) => {
   });
 });
 
+app.get("/api/user/dashboard", authenticateToken, (req, res) => {
+  const userId = req.user.id;
+
+  const query = `
+    SELECT 
+      c.*, 
+      r.room_number, r.type, r.floor, r.size, r.rent_price,
+      t.fullname, t.phone, t.vehicle_info
+    FROM users u
+    JOIN tenants t ON t.user_id = u.id
+    JOIN contracts c ON c.tenant_id = t.id
+    JOIN rooms r ON r.id = c.room_id
+    WHERE u.id = ?
+    ORDER BY c.start_date DESC
+    LIMIT 1
+  `;
+
+  db.get(query, [userId], (err, row) => {
+    if (err) {
+      console.error("❌ Error fetching user dashboard:", err.message);
+      return res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงข้อมูล" });
+    }
+
+    if (!row) return res.status(404).json({ message: "ไม่พบข้อมูลการเช่า" });
+
+    try {
+      if (row.vehicle_info) {
+        row.vehicle_info = JSON.parse(row.vehicle_info);
+      }
+    } catch (e) {
+      row.vehicle_info = {};
+    }
+
+    res.json(row);
+  });
+});
 // ===================================================
 // Start Server
 // ===================================================
