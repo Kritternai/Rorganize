@@ -45,8 +45,8 @@ const HomePage = () => {
             <Link to="/" className="text-blue-600 font-medium relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:bg-blue-600">หน้าหลัก</Link>
             <Link to="/rooms" className="hover:text-blue-600 transition-colors duration-200 relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-blue-600 after:transition-all after:duration-300">ห้องพัก</Link>
             <Link to="/contact" className="hover:text-blue-600 transition-colors duration-200 relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-blue-600 after:transition-all after:duration-300">ติดต่อเรา</Link>
-            <Link to="/booking" className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transform hover:-translate-y-0.5 transition-all duration-300 shadow-md hover:shadow-lg">
-              จองห้องพัก
+            <Link to="/login/user" className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transform hover:-translate-y-0.5 transition-all duration-300 shadow-md hover:shadow-lg">
+              เข้าสู่ระบบ
             </Link>
           </ul>
         </div>

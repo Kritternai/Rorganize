@@ -31,6 +31,8 @@ import TenantList from "./components/TenantList";
 import Payments from "./components/Payments.jsx";
 import Reports from "./components/Reports";
 import Settings from "./components/settings.jsx";
+import UserLogin from "./components/UserLogin";
+import UserLogin from "./components/UserDashboard.jsx";
 
 function App() {
   // ✅ เก็บ Token ของ Admin ใน localStorage
@@ -79,6 +81,8 @@ function App() {
     <Route path="/admin/payments" element={<Payments />} />
     <Route path="/admin/reports" element={<Reports />} />
     <Route path="/admin/settings" element={<Settings />} />
+    <Route path="/login/user" element={<UserLogin />} />
+    <Route path="/user/dashboard" element={<UserDashboard />} />
   </Routes>
 </Router>
   );

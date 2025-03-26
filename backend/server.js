@@ -103,6 +103,29 @@ app.post("/api/utility-bills", authenticateToken, (req, res) => {
   });
 });
 
+app.get("/api/user/dashboard", authenticateToken, (req, res) => {
+  const username = req.user.username;
+
+  db.get(`
+    SELECT c.*, r.room_number, r.type, r.floor, r.size, r.rent_price, r.status, t.fullname
+    FROM users u
+    JOIN tenants t ON t.email = u.username
+    JOIN contracts c ON c.tenant_id = t.id
+    JOIN rooms r ON c.room_id = r.id
+    WHERE u.username = ?
+    ORDER BY c.start_date DESC
+    LIMIT 1
+  `, [username], (err, row) => {
+    if (err) {
+      console.error("❌ ไม่สามารถดึงข้อมูลผู้ใช้:", err.message);
+      return res.status(500).json({ error: "ไม่สามารถดึงข้อมูลผู้ใช้ได้" });
+    }
+
+    if (!row) return res.status(404).json({ message: "ไม่พบข้อมูลการเช่า" });
+
+    res.json(row);
+  });
+});
 
 /**
  * API ดึงข้อมูลบิลค่าน้ำ-ค่าไฟ
