@@ -29,6 +29,8 @@ import CheckInManagement from "./components/CheckInManagement";
 import CheckOutManagement from "./components/CheckOutManagement";
 import TenantList from "./components/TenantList";
 import Payments from "./components/Payments.jsx";
+import Reports from "./components/Reports";
+import Settings from "./components/settings.jsx";
 
 function App() {
   // ✅ เก็บ Token ของ Admin ใน localStorage
@@ -75,7 +77,8 @@ function App() {
     <Route path="/admin/checkout" element={<CheckOutManagement token={adminToken} />} />
     <Route path="/admin/tenants" element={<TenantList token={adminToken} />} />
     <Route path="/admin/payments" element={<Payments />} />
-  
+    <Route path="/admin/reports" element={<Reports />} />
+    <Route path="/admin/settings" element={<Settings />} />
   </Routes>
 </Router>
   );

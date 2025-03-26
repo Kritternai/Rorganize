@@ -209,6 +209,21 @@ app.post("/api/login", (req, res) => {
 // ===================================================
 // Room Management APIs
 // ===================================================
+// ดึงข้อมูลการชำระเงินทั้งหมด
+app.get("/api/payments", authenticateToken, (req, res) => {
+  db.all("SELECT * FROM payments ORDER BY payment_date DESC", [], (err, rows) => {
+    if (err) return res.status(500).json({ error: "ดึงข้อมูลชำระเงินล้มเหลว" });
+    res.json(rows);
+  });
+});
+
+// ดึงข้อมูลแจ้งซ่อมทั้งหมด
+app.get("/api/maintenance-requests", authenticateToken, (req, res) => {
+  db.all("SELECT * FROM maintenance_requests ORDER BY reported_date DESC", [], (err, rows) => {
+    if (err) return res.status(500).json({ error: "ดึงข้อมูลซ่อมบำรุงล้มเหลว" });
+    res.json(rows);
+  });
+});
 
 /**
  * API ดึงข้อมูลห้องพักทั้งหมด
@@ -954,6 +969,142 @@ app.get("/api/checkout", authenticateToken, (req, res) => {
     }
 
     res.json(rows);
+  });
+});
+
+// ✅ เพิ่ม Endpoint ใน server.js สำหรับดึงรายชื่อผู้ใช้งาน
+
+app.get("/api/users", authenticateToken, (req, res) => {
+  // ต้องเป็น admin เท่านั้นถึงจะดูรายชื่อผู้ใช้งานได้
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ error: "คุณไม่มีสิทธิ์เข้าถึงข้อมูลผู้ใช้" });
+  }
+
+  db.all("SELECT id, username, role FROM users ORDER BY id DESC", [], (err, rows) => {
+    if (err) {
+      console.error("❌ ไม่สามารถดึงข้อมูลผู้ใช้:", err.message);
+      return res.status(500).json({ error: "❌ ไม่สามารถดึงข้อมูลผู้ใช้ได้" });
+    }
+
+    res.json(rows);
+  });
+});
+
+
+/**
+ * API รายงานการดำเนินงาน
+ * GET /api/report/rental-stats
+ */
+app.get("/api/report/rental-stats", authenticateToken, (req, res) => {
+  db.get(`
+    SELECT 
+      (SELECT COUNT(*) FROM rooms) AS total_rooms,
+      (SELECT COUNT(*) FROM contracts WHERE status = 'active') AS active_contracts,
+      (SELECT COUNT(*) FROM contracts WHERE status = 'completed') AS completed_contracts,
+      (SELECT COUNT(*) FROM checkouts) AS total_checkouts
+  `, [], (err, result) => {
+    if (err) {
+      console.error("❌ Error fetching rental stats:", err.message);
+      return res.status(500).json({ error: "ไม่สามารถดึงข้อมูลรายงานการเช่าได้" });
+    }
+    res.json(result);
+  });
+});
+
+/**
+ * API รายงานการเงิน
+ * GET /api/report/financial-stats
+ */
+app.get("/api/report/financial-stats", authenticateToken, (req, res) => {
+  db.get(`
+    SELECT 
+      IFNULL((SELECT SUM(amount) FROM payments), 0) AS total_income,
+      IFNULL((SELECT SUM(deposit_amount) FROM contracts WHERE status = 'active'), 0) AS total_deposit,
+      IFNULL((SELECT SUM(total_refund) FROM checkouts), 0) AS total_refund
+  `, [], (err, result) => {
+    if (err) {
+      console.error("❌ Error fetching financial stats:", err.message);
+      return res.status(500).json({ error: "ไม่สามารถดึงข้อมูลรายงานการเงินได้" });
+    }
+    res.json(result);
+  });
+});
+
+/**
+ * API รายงานการบำรุงรักษา
+ * GET /api/report/maintenance-stats
+ */
+app.get("/api/report/maintenance-stats", authenticateToken, (req, res) => {
+  db.get(`
+    SELECT 
+      (SELECT COUNT(*) FROM maintenance_requests) AS total_requests,
+      (SELECT COUNT(*) FROM maintenance_requests WHERE status = 'completed') AS completed_requests,
+      (SELECT COUNT(*) FROM maintenance_requests WHERE status = 'in_progress') AS in_progress_requests,
+      (SELECT COUNT(*) FROM maintenance_requests WHERE status = 'pending') AS pending_requests
+  `, [], (err, result) => {
+    if (err) {
+      console.error("❌ Error fetching maintenance stats:", err.message);
+      return res.status(500).json({ error: "ไม่สามารถดึงข้อมูลรายงานการบำรุงรักษาได้" });
+    }
+    res.json(result);
+  });
+});
+
+app.post("/api/register", async (req, res) => {
+  const { username, password } = req.body;
+  const role = "user"; // บังคับให้เป็น role user เสมอ
+
+  if (!username || !password) {
+    return res.status(400).json({ error: "กรุณาระบุชื่อผู้ใช้และรหัสผ่าน" });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    db.run(
+      "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+      [username, hashedPassword, role],
+      function (err) {
+        if (err) {
+          console.error("❌ เพิ่มผู้ใช้ล้มเหลว:", err.message);
+          return res.status(400).json({ error: "ชื่อผู้ใช้ซ้ำหรือข้อมูลผิดพลาด" });
+        }
+
+        res.status(201).json({ message: "✅ เพิ่มผู้ใช้สำเร็จ", id: this.lastID });
+      }
+    );
+  } catch (err) {
+    console.error("❌ เกิดข้อผิดพลาดในการเข้ารหัสรหัสผ่าน:", err.message);
+    res.status(500).json({ error: "❌ ไม่สามารถเพิ่มผู้ใช้ได้" });
+  }
+});
+
+// ✅ เพิ่ม endpoint อัปเดตผู้ใช้งานตาม ID
+app.put("/api/users/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { username, password, role } = req.body;
+
+  if (!username || !role) {
+    return res.status(400).json({ error: "กรุณาระบุ username และ role" });
+  }
+
+  let updateFields = [username, role];
+  let sql = "UPDATE users SET username = ?, role = ? WHERE id = ?";
+
+  if (password) {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    sql = "UPDATE users SET username = ?, password = ?, role = ? WHERE id = ?";
+    updateFields = [username, hashedPassword, role];
+  }
+
+  updateFields.push(id);
+
+  db.run(sql, updateFields, function (err) {
+    if (err) {
+      console.error("❌ ไม่สามารถอัปเดตผู้ใช้งาน:", err.message);
+      return res.status(500).json({ error: "❌ ไม่สามารถอัปเดตผู้ใช้งานได้" });
+    }
+    res.json({ message: "✅ อัปเดตผู้ใช้สำเร็จ" });
   });
 });
 
