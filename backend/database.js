@@ -245,5 +245,5 @@ const initializeAdmin = () => {
     }
   });
 };
-
+ 
 module.exports = db;
