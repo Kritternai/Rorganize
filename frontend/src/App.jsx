@@ -19,7 +19,6 @@ import RoomDetail from "./components/RoomDetail";
 import BookingPage from "./components/BookingPage";
 import ContactPage from "./components/ContactPage";
 import TenantsPage from "./components/TenantsPage";
-import PaymentsPage from "./components/PaymentsPage";
 import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
 import AddRoom from "./components/AddRoom";
@@ -29,8 +28,7 @@ import RentalContract from "./components/RentalContract";
 import CheckInManagement from "./components/CheckInManagement";
 import CheckOutManagement from "./components/CheckOutManagement";
 import TenantList from "./components/TenantList";
-// Uncomment and update if needed
-//import RoomListStatus from "./components/RoomListStatus";
+import Payments from "./components/Payments.jsx";
 
 function App() {
   // ✅ เก็บ Token ของ Admin ใน localStorage
@@ -66,7 +64,6 @@ function App() {
     <Route path="/booking" element={<BookingPage />} />
     <Route path="/contact" element={<ContactPage />} />
     <Route path="/tenants" element={<TenantsPage />} />
-    <Route path="/payments" element={<PaymentsPage />} />
     <Route path="/login" element={<AdminLogin onLogin={handleLogin} />} />
     <Route path="/admin" element={<AdminDashboard token={adminToken} />} />
     <Route path="/admin/add-room" element={<AddRoom token={adminToken} />} />
@@ -77,6 +74,8 @@ function App() {
     <Route path="/admin/checkin" element={<CheckInManagement token={localStorage.getItem("admin_token")} />} />
     <Route path="/admin/checkout" element={<CheckOutManagement token={adminToken} />} />
     <Route path="/admin/tenants" element={<TenantList token={adminToken} />} />
+    <Route path="/admin/payments" element={<Payments />} />
+  
   </Routes>
 </Router>
   );

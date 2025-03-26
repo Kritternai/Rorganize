@@ -24,6 +24,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+
 // ===================================================
 // Configure file upload with Multer
 // ===================================================
@@ -40,9 +41,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// ===================================================
 // Authentication Middleware
-// ===================================================
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
@@ -55,6 +54,72 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+
+/**
+ * API เพิ่มบิลค่าน้ำ-ค่าไฟใหม่
+ * POST /api/utility-bills
+ * 
+ * Headers: Authorization (JWT)
+ * Body: { contract_id, water_usage, electricity_usage }
+ */
+app.post("/api/utility-bills", authenticateToken, (req, res) => {
+  const { contract_id, water_usage, electricity_usage } = req.body;
+
+  db.get(`
+    SELECT r.water_price, r.electricity_price, c.rent_amount 
+    FROM contracts c
+    JOIN rooms r ON c.room_id = r.id
+    WHERE c.id = ?
+  `, [contract_id], (err, contract) => {
+    if (err || !contract) {
+      console.error("❌ ไม่พบข้อมูลสัญญาหรือห้อง:", err?.message);
+      return res.status(404).json({ error: "ไม่พบข้อมูลสัญญาหรือห้อง" });
+    }
+
+    const { water_price, electricity_price, rent_amount } = contract;
+    const water = parseFloat(water_usage) || 0;
+    const electricity = parseFloat(electricity_usage) || 0;
+    const total_amount = (water * water_price) + (electricity * electricity_price) + rent_amount;
+    const billing_date = new Date().toISOString().split("T")[0];
+
+    db.run(`
+      INSERT INTO utility_bills (
+        contract_id, water_usage, electricity_usage,
+        water_price, electricity_price, total_amount,
+        billing_date, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+    `, [
+      contract_id, water, electricity,
+      water_price, electricity_price, total_amount,
+      billing_date
+    ], function (err) {
+      if (err) {
+        console.error("❌ เพิ่มบิลล้มเหลว:", err.message);
+        return res.status(500).json({ error: "เพิ่มบิลล้มเหลว" });
+      }
+
+      res.status(201).json({ message: "✅ เพิ่มบิลสำเร็จ", id: this.lastID });
+    });
+  });
+});
+
+
+/**
+ * API ดึงข้อมูลบิลค่าน้ำ-ค่าไฟ
+ * GET /api/utility-bills
+ * 
+ * Headers: Authorization (JWT)
+ */
+app.get("/api/utility-bills", authenticateToken, (req, res) => {
+  db.all("SELECT * FROM utility_bills ORDER BY billing_date DESC", [], (err, rows) => {
+    if (err) {
+      console.error("❌ ไม่สามารถดึงข้อมูล utility bills:", err.message);
+      return res.status(500).json({ error: "❌ ดึงข้อมูลล้มเหลว" });
+    }
+    res.json(rows);
+  });
+});
+
 
 // =============================================
 // ✅ API แก้ไขข้อมูลผู้เช่า (ต้องอยู่ก่อน /api/contracts)
