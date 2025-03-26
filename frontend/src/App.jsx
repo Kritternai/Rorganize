@@ -32,7 +32,7 @@ import Payments from "./components/Payments.jsx";
 import Reports from "./components/Reports";
 import Settings from "./components/settings.jsx";
 import UserLogin from "./components/UserLogin";
-import UserLogin from "./components/UserDashboard.jsx";
+import UserDashboard from "./components/UserDashboard.jsx";
 
 function App() {
   // ✅ เก็บ Token ของ Admin ใน localStorage
