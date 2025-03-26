@@ -1161,13 +1161,20 @@ app.get("/api/user/dashboard", authenticateToken, (req, res) => {
   const query = `
     SELECT 
       c.*, 
-      r.room_number, r.type, r.floor, r.size, r.rent_price,
-      t.fullname, t.phone, t.vehicle_info
+      r.room_number, r.type, r.floor, r.size, r.rent_price, r.status AS room_status,
+      t.fullname, t.phone, t.vehicle_info,
+      ub.water_usage, ub.electricity_usage, ub.total_amount, ub.status AS bill_status, ub.billing_date
     FROM users u
     JOIN tenants t ON t.user_id = u.id
     JOIN contracts c ON c.tenant_id = t.id
     JOIN rooms r ON r.id = c.room_id
+    LEFT JOIN utility_bills ub ON ub.id = (
+      SELECT id FROM utility_bills 
+      WHERE contract_id = c.id 
+      ORDER BY billing_date DESC LIMIT 1
+    )
     WHERE u.id = ?
+    AND c.status = 'active'
     ORDER BY c.start_date DESC
     LIMIT 1
   `;
