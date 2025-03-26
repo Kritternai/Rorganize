@@ -14,16 +14,24 @@ const db = new sqlite3.Database("rorganize.db", (err) => {
 const createTables = () => {
   console.log("🔧 กำลังสร้างตาราง...");
 
-  // 🔹 ตารางผู้ใช้ (admin, user)
-  db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL COLLATE NOCASE,
-      password TEXT NOT NULL,
-      role TEXT NOT NULL COLLATE NOCASE CHECK(role IN ('admin', 'user')),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+// 🔹 ตารางผู้ใช้ (admin, user)
+db.run(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL COLLATE NOCASE,
+    password TEXT NOT NULL,
+    role TEXT NOT NULL COLLATE NOCASE CHECK(role IN ('admin', 'user')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`, (err) => {
+  if (err) {
+    console.error("❌ สร้างตาราง users ไม่สำเร็จ:", err.message);
+  } else {
+    console.log("✅ users table ready");
+    initializeAdmin(); // ✅ ย้ายมาเรียกที่นี่
+  }
+});
+
 
   // 🔹 ตารางห้องพัก
   db.run(`
@@ -215,8 +223,8 @@ const createTables = () => {
 
 // ✅ ฟังก์ชันเพิ่มบัญชีผู้ดูแลระบบ (admin) เริ่มต้น
 const initializeAdmin = () => {
-  const adminUsername = "admin";
-  const adminPassword = "rorganize";
+  const adminUsername = "1";
+  const adminPassword = "1";
   const hashedPassword = bcrypt.hashSync(adminPassword, 10);
 
   db.get("SELECT * FROM users WHERE username = ?", [adminUsername], (err, row) => {
