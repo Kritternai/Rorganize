@@ -5,9 +5,30 @@ import { Home, Ruler, Building2 } from 'lucide-react';
 
 // ข้อมูลแท็บ
 const tabData = [
-  { title: "Apartment", space: "185 m²", floor: "26", rooms: 4, parking: "Yes", payment: "Bank Transfer", image: "/images/apartment.jpg" },
-  { title: "Villa", space: "250 m²", floor: "2", rooms: 5, parking: "Yes", payment: "Credit Card", image: "/images/villa.jpg" },
-  { title: "Penthouse", space: "320 m²", floor: "34", rooms: 6, parking: "Yes", payment: "Bank Transfer", image: "/images/penthouse.jpg" },
+  {
+    title: "เฟอร์นิเจอร์ครบ",
+    space: "32 ตร.ม.",
+    floor: "5",
+    rooms: 1,
+    image: "/images/high.png",
+    description: "ห้องสวยพร้อมอยู่ มาพร้อมเฟอร์นิเจอร์ครบชุด เหมาะสำหรับคนเมืองที่ต้องการความสะดวกสบายในทุกวัน",
+  },
+  {
+    title: "เฟอร์นิเจอร์บางส่วน",
+    space: "38 ตร.ม.",
+    floor: "8",
+    rooms: 1,
+    image: "/images/medium.png",
+    description: "ห้องตกแต่งบางส่วนให้คุณเติมแต่งในสไตล์ของตัวเอง พร้อมวิวชั้นสูงและบรรยากาศเงียบสงบ",
+  },
+  {
+    title: "ห้องเปล่า",
+    space: "28 ตร.ม.",
+    floor: "3",
+    rooms: 1,
+    image: "/images/low.png",
+    description: "เริ่มต้นชีวิตใหม่กับห้องเปล่าโล่งกว้าง ให้คุณออกแบบการใช้ชีวิตได้อย่างอิสระ",
+  },
 ];
 
 const HomePage = () => {
@@ -118,11 +139,9 @@ const HomePage = () => {
         <div className="grid md:grid-cols-3 gap-8 items-center">
           <div className="bg-blue-50 p-6 rounded-xl shadow-md">
             <ul className="space-y-2">
-              <li className="flex items-center"><span className="font-semibold w-24">Space:</span> {tabData[activeTab].space}</li>
-              <li className="flex items-center"><span className="font-semibold w-24">Floor:</span> {tabData[activeTab].floor}</li>
-              <li className="flex items-center"><span className="font-semibold w-24">Rooms:</span> {tabData[activeTab].rooms}</li>
-              <li className="flex items-center"><span className="font-semibold w-24">Parking:</span> {tabData[activeTab].parking}</li>
-              <li className="flex items-center"><span className="font-semibold w-24">Payment:</span> {tabData[activeTab].payment}</li>
+              <li className="flex items-center"><span className="font-semibold w-24">พื้นที่:</span> {tabData[activeTab].space}</li>
+              <li className="flex items-center"><span className="font-semibold w-24">ชั้น:</span> {tabData[activeTab].floor}</li>
+              <li className="flex items-center"><span className="font-semibold w-24">ห้อง:</span> {tabData[activeTab].rooms}</li>
             </ul>
           </div>
           <img 
@@ -132,10 +151,7 @@ const HomePage = () => {
           />
           <div className="space-y-4">
             <h3 className="text-xl font-bold">Extra Info About {tabData[activeTab].title}</h3>
-            <p className="text-gray-600">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec.</p>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
-              Schedule a Visit
-            </button>
+            <p className="text-gray-600">{tabData[activeTab].description}</p>
           </div>
         </div>
       </section>

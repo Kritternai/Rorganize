@@ -128,6 +128,7 @@ db.run(`
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       contract_id INTEGER NOT NULL,
       amount REAL NOT NULL,
+      slipImage TEXT,
       payment_date DATE NOT NULL,
       method TEXT NOT NULL COLLATE NOCASE CHECK(method IN ('cash', 'bank_transfer', 'credit_card')),
       status TEXT DEFAULT 'completed' COLLATE NOCASE CHECK(status IN ('completed', 'pending', 'failed')),

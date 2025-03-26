@@ -1163,7 +1163,8 @@ app.get("/api/user/dashboard", authenticateToken, (req, res) => {
       c.*, 
       r.room_number, r.type, r.floor, r.size, r.rent_price, r.status AS room_status,
       t.fullname, t.phone, t.vehicle_info,
-      ub.water_usage, ub.electricity_usage, ub.total_amount, ub.status AS bill_status, ub.billing_date
+      ub.water_usage, ub.electricity_usage, ub.total_amount, ub.status AS bill_status, ub.billing_date,
+      r.water_price, r.electricity_price
     FROM users u
     JOIN tenants t ON t.user_id = u.id
     JOIN contracts c ON c.tenant_id = t.id
@@ -1198,6 +1199,32 @@ app.get("/api/user/dashboard", authenticateToken, (req, res) => {
     res.json(row);
   });
 });
+
+
+app.post("/api/payments", authenticateToken, upload.single("slip"), (req, res) => {
+  const { contract_id, amount, method } = req.body;
+  const slipImage = req.file ? req.file.filename : null;
+
+  if (!contract_id || !amount || !method) {
+    return res.status(400).json({ error: "ข้อมูลไม่ครบถ้วน" });
+  }
+
+  const payment_date = new Date().toISOString().split("T")[0];
+
+  db.run(`
+    INSERT INTO payments (contract_id, amount, slipImage, payment_date, method, status)
+    VALUES (?, ?, ?, ?, ?, 'completed')
+  `, [contract_id, amount, slipImage, payment_date, method], function (err) {
+    if (err) {
+      console.error("❌ ชำระเงินไม่สำเร็จ:", err.message);
+      return res.status(500).json({ error: "ไม่สามารถบันทึกการชำระเงินได้" });
+    }
+
+    res.status(201).json({ message: "✅ บันทึกการชำระเงินสำเร็จ", id: this.lastID });
+  });
+});
+
+
 // ===================================================
 // Start Server
 // ===================================================
