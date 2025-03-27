@@ -8,9 +8,14 @@ import {
   X,
   FileText,
   Clock,
-  CheckCircle
+  CheckCircle,
+  LogOut,
+  User,
+  Calendar,
+  DollarSign
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import "@fontsource/prompt";
 
 const UserDashboard = () => {
@@ -22,6 +27,13 @@ const UserDashboard = () => {
   const [confirmed, setConfirmed] = useState(false);
   const [slip, setSlip] = useState(null);
   const token = localStorage.getItem("user_token");
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("user_token");
+    localStorage.removeItem("user_info");
+    navigate("/login/user");
+  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -68,7 +80,6 @@ const UserDashboard = () => {
     }
   }, [token]);
 
-  // Fetch latest payment status based on contract id
   const [latestPaymentStatus, setLatestPaymentStatus] = useState(null);
 
   useEffect(() => {
@@ -162,66 +173,76 @@ const UserDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen font-[Prompt] bg-gray-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      <div className="flex justify-center items-center h-screen font-[Prompt] bg-gradient-to-br from-blue-50 to-blue-100">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600" />
       </div>
     );
   }
 
   if (!contract) {
     return (
-      <div className="p-8 text-center font-[Prompt] bg-gray-50 min-h-screen flex flex-col justify-center items-center">
+      <div className="p-8 text-center font-[Prompt] bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen flex flex-col justify-center items-center">
         <Toaster richColors />
-        <AlertCircle className="text-yellow-500 mb-4 w-16 h-16" />
-        <p className="text-gray-600 text-lg">ไม่พบข้อมูลการเช่า</p>
+        <AlertCircle className="text-yellow-500 mb-4 w-20 h-20 animate-pulse" />
+        <p className="text-gray-600 text-xl font-semibold">ไม่พบข้อมูลการเช่า</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen font-[Prompt] p-4 md:p-8">
+    <div className="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen font-[Prompt] p-4 md:p-8">
       <Toaster richColors />
       
-      <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6">
+      <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
         {/* Sidebar */}
-        <div className="md:col-span-1 bg-white rounded-xl shadow-lg p-6">
-          <div className="text-center mb-6">
-            <div className="w-24 h-24 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <Home className="w-12 h-12 text-blue-600" />
+        <div className="md:col-span-1 bg-white rounded-2xl shadow-2xl p-8 transform transition-all hover:scale-[1.02]">
+          <div className="text-center mb-8">
+            <div className="w-32 h-32 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-6 shadow-lg">
+              <User className="w-16 h-16 text-blue-600" />
             </div>
-            <h2 className="text-xl font-bold text-gray-800">{contract.fullname}</h2>
-            <p className="text-gray-500">ห้อง {contract.room_number}</p>
+            <h2 className="text-2xl font-bold text-gray-800">{contract.fullname}</h2>
+            <p className="text-lg text-gray-500">ห้อง {contract.room_number}</p>
           </div>
 
-          <div className="space-y-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600 mb-2">สถานะสัญญา</p>
-              <div className="flex items-center">
-                {contract.status === 'active' ? (
-                  <CheckCircle className="text-green-500 mr-2" />
-                ) : (
-                  <Clock className="text-yellow-500 mr-2" />
-                )}
-                <span className="font-medium">{contract.status || "ไม่มีข้อมูล"}</span>
+          <div className="space-y-6">
+            <div className="bg-blue-50 p-5 rounded-xl shadow-sm">
+              <div className="flex items-center mb-2">
+                <CheckCircle className="mr-3 text-green-500" />
+                <p className="text-sm text-gray-600">สถานะสัญญา</p>
               </div>
+              <p className="font-semibold text-gray-800">
+                {contract.status === 'active' ? 'ใช้งาน' : 'รอดำเนินการ'}
+              </p>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600 mb-2">ระยะเวลาเช่า</p>
-              <p className="font-medium">{contract.start_date} - {contract.end_date}</p>
+            <div className="bg-blue-50 p-5 rounded-xl shadow-sm">
+              <div className="flex items-center mb-2">
+                <Calendar className="mr-3 text-blue-500" />
+                <p className="text-sm text-gray-600">ระยะเวลาเช่า</p>
+              </div>
+              <p className="font-semibold text-gray-800">
+                {contract.start_date} - {contract.end_date}
+              </p>
             </div>
+
+            <button
+              onClick={handleLogout}
+              className="w-full bg-red-500 text-white py-3 rounded-xl hover:bg-red-600 transition-colors flex items-center justify-center"
+            >
+              <LogOut className="mr-2" /> ออกจากระบบ
+            </button>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="md:col-span-2 space-y-6">
+        <div className="md:col-span-2 space-y-8">
           {/* Invoice Summary */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800 flex items-center">
-                <FileText className="mr-2 text-blue-600" /> สรุปค่าใช้จ่าย
+          <div className="bg-white rounded-2xl shadow-2xl p-8 transform transition-all hover:scale-[1.01]">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold text-gray-800 flex items-center">
+                <FileText className="mr-3 text-blue-600" /> สรุปค่าใช้จ่าย
               </h3>
-              <span className={`px-3 py-1 rounded-full text-sm ${
+              <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
                 contract.bill_status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
                 contract.bill_status === 'completed' ? 'bg-green-100 text-green-800' : 
                 'bg-gray-100 text-gray-800'
@@ -230,54 +251,56 @@ const UserDashboard = () => {
               </span>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                    <p className="text-gray-600">ค่าน้ำต่อหน่วย</p>
-                    <p className="font-medium">{contract.water_price} บาท</p>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-blue-50 p-5 rounded-xl shadow-sm">
+                <div className="flex items-center mb-2">
+                  <DollarSign className="mr-3 text-blue-500" />
+                  <p className="text-sm text-gray-600">ค่าน้ำ</p>
                 </div>
-                <div>
-                    <p className="text-gray-600">ค่าไฟต่อหน่วย</p>
-                    <p className="font-medium">{contract.electricity_price} บาท</p>
+                <p className="font-semibold text-gray-800">{contract.water_price} บาท</p>
+              </div>
+              <div className="bg-blue-50 p-5 rounded-xl shadow-sm">
+                <div className="flex items-center mb-2">
+                  <DollarSign className="mr-3 text-blue-500" />
+                  <p className="text-sm text-gray-600">ค่าไฟ</p>
                 </div>
-                <div>
-                    <p className="text-gray-600">ค่าน้ำ ({contract.water_usage} หน่วย)</p>
-                    <p className="font-medium">
-                    {(contract.water_usage * contract.water_price).toFixed(2)} บาท
-                    </p>
+                <p className="font-semibold text-gray-800">{contract.electricity_price} บาท</p>
+              </div>
+              <div className="bg-blue-50 p-5 rounded-xl shadow-sm">
+                <div className="flex items-center mb-2">
+                  <Home className="mr-3 text-blue-500" />
+                  <p className="text-sm text-gray-600">ค่าเช่า</p>
                 </div>
-                <div>
-                    <p className="text-gray-600">ค่าไฟ ({contract.electricity_usage} หน่วย)</p>
-                    <p className="font-medium">
-                    {(contract.electricity_usage * contract.electricity_price).toFixed(2)} บาท
-                    </p>
+                <p className="font-semibold text-gray-800">{contract.rent_price} บาท</p>
+              </div>
+              <div className="bg-blue-50 p-5 rounded-xl shadow-sm">
+                <div className="flex items-center mb-2">
+                  <CreditCard className="mr-3 text-blue-500" />
+                  <p className="text-sm text-gray-600">รวมทั้งหมด</p>
                 </div>
-                <div>
-                    <p className="text-gray-600">ค่าเช่า</p>
-                    <p className="font-medium">{contract.rent_price} บาท</p>
-                </div>
-                <div>
-                    <p className="text-gray-600 font-bold">รวมทั้งหมด</p>
-                    <p className="font-bold text-blue-600 text-lg">
-                    {contract.total_amount.toFixed(2)} บาท
-                    </p>
-                </div>
-                </div>
+                <p className="font-bold text-blue-700 text-xl">
+                  {contract.total_amount.toFixed(2)} บาท
+                </p>
+              </div>
+            </div>
 
-            <div className="mt-6 grid md:grid-cols-2 gap-4">
+            <div className="mt-8 grid md:grid-cols-2 gap-6">
               <button
                 onClick={() => setShowInvoiceModal(true)}
-                className="bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg flex items-center justify-center"
+                className="bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl transition-colors flex items-center justify-center"
               >
                 <CreditCard className="mr-2" /> ชำระเงินบิล
               </button>
               <button
                 onClick={() => setShowMaintenanceModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg flex items-center justify-center"
+                className="bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl transition-colors flex items-center justify-center"
               >
                 <Wrench className="mr-2" /> แจ้งซ่อมบำรุง
               </button>
             </div>
           </div>
+        </div>
+      </div>
 
           {/* Invoice Modal */}
           {showInvoiceModal && (
@@ -533,8 +556,6 @@ const UserDashboard = () => {
             </div>
           )}
         </div>
-      </div>
-    </div>
   );
 };
 

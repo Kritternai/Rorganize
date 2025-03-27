@@ -253,7 +253,7 @@ app.post("/api/login", (req, res) => {
   });
 });
 
-// New API endpoint: Get merged user dashboard data
+// Only one /api/user/dashboard endpoint is defined - retained version
 app.get("/api/user/dashboard", authenticateToken, (req, res) => {
   const userId = req.user.id;
 
@@ -1229,52 +1229,6 @@ app.put("/api/users/:id", authenticateToken, async (req, res) => {
       return res.status(500).json({ error: "❌ ไม่สามารถอัปเดตผู้ใช้งานได้" });
     }
     res.json({ message: "✅ อัปเดตผู้ใช้สำเร็จ" });
-  });
-});
-
-app.get("/api/user/dashboard", authenticateToken, (req, res) => {
-  const userId = req.user.id;
-
-  const query = `
-    SELECT 
-      c.id AS contract_id,
-      r.room_number, r.type, r.floor, r.size, r.rent_price, r.status AS room_status,
-      t.fullname, t.phone, t.vehicle_info,
-      ub.water_usage, ub.electricity_usage, ub.total_amount, ub.status AS bill_status, ub.billing_date,
-      r.water_price, r.electricity_price,
-      c.start_date, c.end_date, c.status AS contract_status
-    FROM users u
-    JOIN tenants t ON t.user_id = u.id
-    JOIN contracts c ON c.tenant_id = t.id
-    JOIN rooms r ON r.id = c.room_id
-    LEFT JOIN utility_bills ub ON ub.id = (
-      SELECT id FROM utility_bills 
-      WHERE contract_id = c.id 
-      ORDER BY billing_date DESC LIMIT 1
-    )
-    WHERE u.id = ?
-    AND c.status = 'active'
-    ORDER BY c.start_date DESC
-    LIMIT 1
-  `;
-
-  db.get(query, [userId], (err, row) => {
-    if (err) {
-      console.error("❌ Error fetching user dashboard:", err.message);
-      return res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงข้อมูล" });
-    }
-
-    if (!row) return res.status(404).json({ message: "ไม่พบข้อมูลการเช่า" });
-
-    try {
-      if (row.vehicle_info) {
-        row.vehicle_info = JSON.parse(row.vehicle_info);
-      }
-    } catch (e) {
-      row.vehicle_info = {};
-    }
-
-    res.json(row);
   });
 });
 

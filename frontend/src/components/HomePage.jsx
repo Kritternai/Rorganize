@@ -95,10 +95,6 @@ const HomePage = () => {
             to="/" 
             className="text-3xl font-bold text-blue-600 hover:text-blue-800 transition-colors duration-300 flex items-center gap-2"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              <polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
             The Luxe
           </Link>
           <ul className="flex gap-5 items-center">
@@ -111,12 +107,6 @@ const HomePage = () => {
               transform hover:-translate-y-0.5 transition-all duration-300 
               shadow-md hover:shadow-lg flex items-center gap-2"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
               เข้าสู่ระบบ
             </Link>
           </ul>
@@ -132,8 +122,8 @@ const HomePage = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/80" />
         <div className={`absolute inset-0 flex flex-col justify-center items-center text-center text-white px-4 ${isFirstLoad ? "opacity-0 animate-fadeIn" : "opacity-100"}`}>
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg">ยินดีต้อนรับสู่ The Luxe</h1>
-          <p className="text-lg md:text-xl mb-6 max-w-2xl drop-shadow">ห้องพักหรูใจกลางเมือง บริการเหนือระดับ สำหรับคุณ</p>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg text-white">ยินดีต้อนรับสู่ The Luxe</h1>
+          <p className="text-lg md:text-xl mb-6 max-w-2xl drop-shadow text-white">ห้องพักหรูใจกลางเมือง บริการเหนือระดับ สำหรับคุณ</p>
           <div className="flex gap-4">
             <Link to="/rooms" className="bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all">สำรวจห้องพัก</Link>
             <Link to="/contact" className="bg-white text-blue-700 hover:bg-gray-100 px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all">ติดต่อเรา</Link>
@@ -276,7 +266,7 @@ const HomePage = () => {
       <section className="py-20 bg-blue-700 text-white text-center relative overflow-hidden" data-aos="zoom-in">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-800 to-blue-600 opacity-90 -z-10"></div>
         <h2 className="text-3xl font-bold mb-4 relative z-10">พร้อมแล้วที่จะเริ่มต้นชีวิตใหม่?</h2>
-        <p className="mb-6 text-lg relative z-10">ติดต่อเราวันนี้ เพื่อดูห้องพักที่เหมาะกับคุณ</p>
+        <p className="mb-6 text-lg text-white relative z-10">ติดต่อเราวันนี้ เพื่อดูห้องพักที่เหมาะกับคุณ</p>
         <Link 
           to="/contact" 
           className="bg-white text-blue-700 px-8 py-3 rounded-full text-lg font-semibold hover:bg-gray-100 transition-all shadow-lg relative z-10"
