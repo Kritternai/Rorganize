@@ -1,9 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { Home, Ruler, Building2 } from 'lucide-react';
+import AOS from "aos";
+import "aos/dist/aos.css";
+import banner1 from "./images/banner1.png";
+import banner2 from "./images/banner2.png";
+import {
+  Home,
+  Ruler,
+  Building2,
+  Star,
+  KeyRound,
+  ShieldCheck,
+  Phone,
+} from "lucide-react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, Pagination } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/pagination";
 
-// ข้อมูลแท็บ
 const tabData = [
   {
     title: "เฟอร์นิเจอร์ครบ",
@@ -11,7 +26,8 @@ const tabData = [
     floor: "5",
     rooms: 1,
     image: "/images/high.png",
-    description: "ห้องสวยพร้อมอยู่ มาพร้อมเฟอร์นิเจอร์ครบชุด เหมาะสำหรับคนเมืองที่ต้องการความสะดวกสบายในทุกวัน",
+    description:
+      "ห้องสวยพร้อมอยู่ มาพร้อมเฟอร์นิเจอร์ครบชุด เหมาะสำหรับคนเมืองที่ต้องการความสะดวกสบายในทุกวัน",
   },
   {
     title: "เฟอร์นิเจอร์บางส่วน",
@@ -19,7 +35,8 @@ const tabData = [
     floor: "8",
     rooms: 1,
     image: "/images/medium.png",
-    description: "ห้องตกแต่งบางส่วนให้คุณเติมแต่งในสไตล์ของตัวเอง พร้อมวิวชั้นสูงและบรรยากาศเงียบสงบ",
+    description:
+      "ห้องตกแต่งบางส่วนให้คุณเติมแต่งในสไตล์ของตัวเอง พร้อมวิวชั้นสูงและบรรยากาศเงียบสงบ",
   },
   {
     title: "ห้องเปล่า",
@@ -27,169 +44,189 @@ const tabData = [
     floor: "3",
     rooms: 1,
     image: "/images/low.png",
-    description: "เริ่มต้นชีวิตใหม่กับห้องเปล่าโล่งกว้าง ให้คุณออกแบบการใช้ชีวิตได้อย่างอิสระ",
+    description:
+      "เริ่มต้นชีวิตใหม่กับห้องเปล่าโล่งกว้าง ให้คุณออกแบบการใช้ชีวิตได้อย่างอิสระ",
   },
 ];
 
+const testimonials = [
+  { name: "คุณพลอย", text: "ที่พักสะอาด เงียบสงบ บริการดีมาก ประทับใจสุดๆ!" },
+  { name: "คุณธนภัทร", text: "ห้องสวยเกินคาด บรรยากาศเหมือนโรงแรมหรู ใจกลางเมือง" },
+  { name: "คุณณัฐ", text: "ประทับใจตั้งแต่วันแรกที่เข้าพัก ทีมงานดูแลดีมาก" },
+];
+
 const HomePage = () => {
+  const banners = [banner1, banner2];
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
   const [currentSlide, setCurrentSlide] = useState(0);
-  
-  const banners = ["bannermain-01.png", "banner-02.jpg"];
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [lightboxImage, setLightboxImage] = useState(null);
+
+  useEffect(() => {
+    AOS.init({ duration: 1000, once: true });
+    const timer = setTimeout(() => setIsFirstLoad(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     axios.get("http://localhost:3001/api/rooms")
-      .then(response => { setRooms(response.data); setLoading(false); })
-      .catch(() => { setError("❌ ไม่สามารถโหลดข้อมูลห้องพักได้"); setLoading(false); });
+      .then(res => { setRooms(res.data); setLoading(false); })
+      .catch(() => { setError("\u274C ไม่สามารถโหลดข้อมูลห้องพักได้"); setLoading(false); });
   }, []);
 
-  // สไลด์อัตโนมัติ
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide(prev => (prev + 1) % banners.length);
+      setCurrentSlide((prev) => (prev + 1) % banners.length);
     }, 3000);
     return () => clearInterval(timer);
   }, [banners.length]);
 
   return (
-    <div className="font-[Prompt] bg-gradient-to-b from-blue-50 to-white min-h-screen">
-      {/* Navbar with hover effects */}
+    <div className="font-[Prompt] bg-gradient-to-b from-white to-blue-50 text-gray-800 scroll-smooth">
+      {/* Navbar */}
       <nav className="sticky top-0 bg-white shadow-md z-50 transition-all duration-300">
         <div className="container mx-auto flex justify-between items-center py-4 px-6">
-          <Link to="/" className="text-3xl font-bold text-blue-600 hover:text-blue-800 transition-colors duration-300">
-            Rorganize
-          </Link>
-          <ul className="flex gap-5 items-center">
-            <Link to="/" className="text-blue-600 font-medium relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:bg-blue-600">หน้าหลัก</Link>
-            <Link to="/rooms" className="hover:text-blue-600 transition-colors duration-200 relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-blue-600 after:transition-all after:duration-300">ห้องพัก</Link>
-            <Link to="/contact" className="hover:text-blue-600 transition-colors duration-200 relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-blue-600 after:transition-all after:duration-300">ติดต่อเรา</Link>
-            <Link to="/login/user" className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transform hover:-translate-y-0.5 transition-all duration-300 shadow-md hover:shadow-lg">
+          <Link to="/" className="text-3xl font-bold text-blue-700 hover:text-blue-900 transition-colors duration-300">Rorganize</Link>
+          <ul className="flex gap-6 items-center text-sm md:text-base">
+            <Link to="/" className="text-blue-700 font-medium relative group">
+              หน้าหลัก
+              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-700 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+            </Link>
+            <Link to="/rooms" className="text-gray-700 hover:text-blue-700 relative group">
+              ห้องพัก
+              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-700 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+            </Link>
+            <Link to="/contact" className="text-gray-700 hover:text-blue-700 relative group">
+              ติดต่อเรา
+              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-700 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+            </Link>
+            <Link to="/login/user" className="bg-blue-700 text-white px-5 py-2 rounded-lg hover:bg-blue-800 transform hover:-translate-y-0.5 transition-all duration-300 shadow-md hover:shadow-lg">
               เข้าสู่ระบบ
             </Link>
           </ul>
         </div>
       </nav>
 
-      {/* Banner with simplified slider */}
+      {/* Banner */}
       <div className="relative h-screen overflow-hidden">
-        {banners.map((img, idx) => (
-          <div 
-            key={idx} 
-            className={`absolute w-full h-full transition-opacity duration-1000 ${idx === currentSlide ? 'opacity-100' : 'opacity-0'}`}
-          >
-            <img src={`/images/${img}`} className="w-full h-full object-cover" alt={`Banner ${idx + 1}`} />
+        <img
+          src={banners[currentSlide]}
+          alt={`Banner ${currentSlide}`}
+          className={`absolute inset-0 w-full h-full object-cover ${isFirstLoad ? "animate-fadeZoom" : ""}`}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/80" />
+        <div className={`absolute inset-0 flex flex-col justify-center items-center text-center text-white px-4 ${isFirstLoad ? "opacity-0 animate-fadeIn" : "opacity-100"}`}>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg">ยินดีต้อนรับสู่ Rorganize</h1>
+          <p className="text-lg md:text-xl mb-6 max-w-2xl drop-shadow">ห้องพักหรูใจกลางเมือง บริการเหนือระดับ สำหรับคุณ</p>
+          <div className="flex gap-4">
+            <Link to="/rooms" className="bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all">สำรวจห้องพัก</Link>
+            <Link to="/contact" className="bg-white text-blue-700 hover:bg-gray-100 px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all">ติดต่อเรา</Link>
           </div>
-        ))}
-        
-        {/* Simplified pagination dots */}
-        <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-2">
-          {banners.map((_, idx) => (
-            <button 
-              key={idx} 
-              onClick={() => setCurrentSlide(idx)}
-              className={`w-3 h-3 rounded-full ${idx === currentSlide ? 'bg-white' : 'bg-white/50'}`}
-              aria-label={`Go to slide ${idx + 1}`}
-            />
-          ))}
         </div>
       </div>
 
-      {/* Featured Section */}
-      <section className="max-w-6xl mx-auto my-16 px-4 grid md:grid-cols-3 gap-8 items-center">
-        <div className="relative">
-          <img src="/images/featured.jpg" className="rounded-xl shadow-lg w-full" alt="Featured property" />
-          <div className="absolute bottom-4 left-4 bg-blue-500 p-3 rounded-full shadow-lg">
-            <Home className="text-white" />
+      {/* Features */}
+      <section className="py-20 bg-transparent" data-aos="fade-up">
+        <div className="max-w-6xl mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-12 text-blue-900">สิ่งที่ทำให้เราแตกต่าง</h2>
+          <div className="grid md:grid-cols-4 gap-10">
+            {[
+              { icon: <Home />, title: "ห้องหรู", desc: "ตกแต่งทันสมัย พร้อมวิวเมือง" },
+              { icon: <ShieldCheck />, title: "ปลอดภัย", desc: "ระบบรักษาความปลอดภัย 24 ชม." },
+              { icon: <Star />, title: "บริการระดับ 5 ดาว", desc: "บริการครบวงจรจากทีมงานมืออาชีพ" },
+              { icon: <KeyRound />, title: "เข้าอยู่ได้ทันที", desc: "ห้องพร้อมอยู่ พร้อมเฟอร์นิเจอร์ครบ" }
+            ].map(({ icon, title, desc }) => (
+              <div key={title} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-2 group">
+                <div className="text-blue-700 mb-4 group-hover:text-blue-900 transition">{icon}</div>
+                <h4 className="font-semibold text-xl mb-2 text-blue-900">{title}</h4>
+                <p className="text-gray-700">{desc}</p>
+              </div>
+            ))}
           </div>
-        </div>
-        <div className="md:col-span-2 space-y-3">
-          <h3 className="text-blue-600 font-semibold">| FEATURED</h3>
-          <h2 className="text-4xl font-bold">Best Apartment & Sea View</h2>
-          <p className="text-gray-600">สัมผัสบรรยากาศที่หรูหราและสะดวกสบาย</p>
         </div>
       </section>
 
-      <div className="max-w-4xl mx-auto border-t-2 border-gray-200"></div>
-
-      {/* Best Deal Tabs - Simplified */}
-      <section className="max-w-6xl mx-auto my-16 px-4">
-        <h2 className="text-3xl text-center font-bold mb-10">Find Your Best Deal Right Now!</h2>
-        
-        {/* Tab buttons */}
+      {/* Tabbed Room Selector */}
+      <section className="max-w-6xl mx-auto py-20 px-4" data-aos="fade-up">
+        <h2 className="text-3xl text-center font-bold mb-10 text-blue-900">ค้นหาห้องที่ใช่สำหรับคุณ</h2>
         <div className="flex justify-center gap-4 mb-8">
           {tabData.map((tab, idx) => (
-            <button
+            <button 
               key={tab.title}
               onClick={() => setActiveTab(idx)}
-              className={`px-6 py-2 rounded-full transition-colors ${
-                activeTab === idx 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-200 hover:bg-gray-300'
+              className={`px-6 py-2 rounded-full transition-all duration-300 ${
+                activeTab === idx
+                  ? 'bg-blue-700 text-white shadow-md'
+                  : 'bg-blue-50 text-blue-900 hover:bg-blue-100 hover:shadow-sm'
               }`}
             >
               {tab.title}
             </button>
           ))}
         </div>
-        
-        {/* Tab content */}
         <div className="grid md:grid-cols-3 gap-8 items-center">
-          <div className="bg-blue-50 p-6 rounded-xl shadow-md">
-            <ul className="space-y-2">
-              <li className="flex items-center"><span className="font-semibold w-24">พื้นที่:</span> {tabData[activeTab].space}</li>
-              <li className="flex items-center"><span className="font-semibold w-24">ชั้น:</span> {tabData[activeTab].floor}</li>
-              <li className="flex items-center"><span className="font-semibold w-24">ห้อง:</span> {tabData[activeTab].rooms}</li>
+          <div className="bg-white p-6 rounded-xl shadow-lg" data-aos="fade-right" data-aos-delay="100">
+            <ul className="space-y-3 text-gray-700">
+              <li><strong className="text-blue-900">พื้นที่:</strong> {tabData[activeTab].space}</li>
+              <li><strong className="text-blue-900">ชั้น:</strong> {tabData[activeTab].floor}</li>
+              <li><strong className="text-blue-900">ห้อง:</strong> {tabData[activeTab].rooms}</li>
             </ul>
           </div>
-          <img 
-            src={tabData[activeTab].image} 
-            className="h-64 w-full object-cover rounded-xl shadow-lg" 
-            alt={tabData[activeTab].title} 
-          />
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold">Extra Info About {tabData[activeTab].title}</h3>
-            <p className="text-gray-600">{tabData[activeTab].description}</p>
+          <div data-aos="zoom-in" data-aos-delay="200">
+            <button onClick={() => setLightboxImage(tabData[activeTab].image)}>
+              <img 
+                src={tabData[activeTab].image} 
+                className="h-64 w-full object-cover rounded-xl shadow-lg border-4 border-blue-100" 
+                alt={tabData[activeTab].title} 
+              />
+            </button>
+          </div>
+          <div data-aos="fade-left" data-aos-delay="300">
+            <h3 className="text-xl font-bold mb-2 text-blue-900">รายละเอียด {tabData[activeTab].title}</h3>
+            <p className="text-gray-700">{tabData[activeTab].description}</p>
           </div>
         </div>
       </section>
 
-      <div className="max-w-4xl mx-auto border-t-2 border-gray-200"></div>
+        {lightboxImage && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/70"
+            onClick={() => setLightboxImage(null)}
+          >
+            <img
+              src={lightboxImage}
+              alt="Zoomed"
+              className="max-w-3xl max-h-[90vh] rounded-lg shadow-2xl border-4 border-white"
+            />
+          </div>
+        )}
 
-      {/* Room Listings */}
-      <section className="max-w-6xl mx-auto my-16 px-4">
-        <h3 className="text-center text-3xl font-semibold mb-10">ห้องพักแนะนำ</h3>
-
-        {loading && <p className="text-center text-blue-500">กำลังโหลดข้อมูล...</p>}
+      <section className="max-w-7xl mx-auto py-24 px-6" data-aos="fade-up">
+        <h3 className="text-center text-4xl font-bold mb-14 text-blue-900">ห้องพักแนะนำ</h3>
+        {loading && <p className="text-center text-blue-700 text-lg">กำลังโหลดข้อมูล...</p>}
         {error && <p className="text-center text-red-500">{error}</p>}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {rooms.map(room => (
-            <div key={room.id} className="bg-white rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-transform">
-              <Link to={`/rooms/${room.id}`}>
-                <img 
-                  src={room.cover_image || "/images/default-room.jpg"} 
-                  className="h-56 w-full object-cover" 
-                  alt={`ห้อง ${room.room_number}`} 
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+          {rooms.map((room) => (
+            <div key={room.id} className="bg-white rounded-2xl overflow-hidden shadow-xl group transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+              <button onClick={() => setLightboxImage(room.cover_image || "/images/default-room.jpg")} className="block w-full h-72 overflow-hidden">
+                <img
+                  src={room.cover_image || "/images/default-room.jpg"}
+                  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                  alt={`ห้อง ${room.room_number}`}
                 />
-              </Link>
-              <div className="p-5">
-                <h4 className="text-xl font-bold mb-3">ห้อง {room.room_number}</h4>
-                <div className="flex gap-4 text-gray-600 mb-4">
-                  <div className="flex items-center gap-1">
-                    <Ruler size={18} className="text-blue-500" /> 
-                    <span>{room.size} ตร.ม.</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Building2 size={18} className="text-blue-500" /> 
-                    <span>ชั้น {room.floor}</span>
-                  </div>
+              </button>
+              <div className="p-6">
+                <h4 className="text-2xl font-semibold text-blue-900 mb-2">ห้อง {room.room_number}</h4>
+                <div className="flex gap-6 text-gray-600 text-sm mb-4">
+                  <div className="flex items-center gap-1"><Ruler size={18} className="text-blue-700" /> <span>{room.size} ตร.ม.</span></div>
+                  <div className="flex items-center gap-1"><Building2 size={18} className="text-blue-700" /> <span>ชั้น {room.floor}</span></div>
                 </div>
-                <Link 
-                  to={`/rooms/${room.id}`} 
-                  className="inline-block bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-full transition-colors"
+                <Link
+                  to={`/rooms/${room.id}`}
+                  className="inline-block bg-blue-700 hover:bg-blue-800 text-white px-6 py-2.5 rounded-full text-sm font-medium transition-all"
                 >
                   ดูรายละเอียด
                 </Link>
@@ -198,34 +235,48 @@ const HomePage = () => {
           ))}
         </div>
       </section>
-      
-      {/* Footer */}
-      <footer className="bg-gray-800 text-white py-12">
-        <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-3 gap-8">
-          <div>
-            <h3 className="text-2xl font-bold mb-4">Rorganize</h3>
-            <p className="text-gray-400">เว็บไซต์จองห้องพักออนไลน์ที่คุณวางใจ</p>
-          </div>
-          <div>
-            <h4 className="text-xl font-semibold mb-4">Quick Links</h4>
-            <ul className="space-y-2">
-              <li><Link to="/" className="text-gray-400 hover:text-white transition-colors">หน้าหลัก</Link></li>
-              <li><Link to="/rooms" className="text-gray-400 hover:text-white transition-colors">ห้องพัก</Link></li>
-              <li><Link to="/contact" className="text-gray-400 hover:text-white transition-colors">ติดต่อเรา</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-xl font-semibold mb-4">Contact</h4>
-            <address className="text-gray-400 not-italic">
-              123 อาคารใดๆ ถนนสุขุมวิท<br />
-              กรุงเทพฯ 10110<br />
-              โทร: 02-123-4567<br />
-              อีเมล: contact@rorganize.com
-            </address>
-          </div>
+
+      {/* Testimonials Carousel */}
+      <section className="bg-blue-50 py-20" data-aos="fade-up">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-10 text-blue-900">เสียงจากผู้เข้าพัก</h2>
+          <Swiper
+            modules={[Autoplay, Pagination]}
+            autoplay={{ delay: 4000 }}
+            pagination={{ clickable: true }}
+            spaceBetween={20}
+            className="!overflow-visible"
+          >
+            {testimonials.map((t, idx) => (
+              <SwiperSlide key={idx}>
+                <div className="bg-white p-6 rounded-xl shadow-lg max-w-xl mx-auto border-b-4 border-blue-700">
+                  <p className="text-gray-700 italic mb-4">"{t.text}"</p>
+                  <p className="font-semibold text-blue-900">– {t.name}</p>
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
         </div>
-        <div className="max-w-6xl mx-auto mt-8 pt-8 border-t border-gray-700 px-4 text-center text-gray-500">
-          &copy; {new Date().getFullYear()} Rorganize. All rights reserved.
+      </section>
+
+      {/* CTA */}
+      <section className="py-20 bg-blue-700 text-white text-center relative overflow-hidden" data-aos="zoom-in">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-800 to-blue-600 opacity-90 -z-10"></div>
+        <h2 className="text-3xl font-bold mb-4 relative z-10">พร้อมแล้วที่จะเริ่มต้นชีวิตใหม่?</h2>
+        <p className="mb-6 text-lg relative z-10">ติดต่อเราวันนี้ เพื่อดูห้องพักที่เหมาะกับคุณ</p>
+        <Link 
+          to="/contact" 
+          className="bg-white text-blue-700 px-8 py-3 rounded-full text-lg font-semibold hover:bg-gray-100 transition-all shadow-lg relative z-10"
+        >
+          ติดต่อเรา
+        </Link>
+      </section>
+
+      {/* Minimal Footer */}
+      <footer className="bg-blue-900 text-blue-100 text-xs py-6">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center text-center sm:text-left gap-2">
+          <p>Rorganize – ที่พักหรูสำหรับชีวิตเมืองระดับพรีเมียม</p>
+          <p className="text-[11px] text-blue-300">&copy; {new Date().getFullYear()} Rorganize. All rights reserved.</p>
         </div>
       </footer>
     </div>
