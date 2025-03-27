@@ -1,0 +1,177 @@
+// Database schema for Rorganize Apartment Management System
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table users {
+  id integer [primary key]
+  username varchar [unique, not null]
+  password varchar [not null]
+  role varchar [not null] // admin, user
+  created_at timestamp
+}
+
+Table tenants {
+  id integer [primary key]
+  fullname varchar [not null]
+  email varchar [unique, not null]
+  phone varchar [not null]
+  emergency_contact varchar
+  document text
+  vehicle_info text // JSON string
+  user_id integer
+  created_at timestamp
+}
+
+Table rooms {
+  id integer [primary key]
+  room_number varchar [unique, not null]
+  type varchar [not null]
+  floor integer [not null]
+  size integer [not null]
+  rent_price real [not null]
+  deposit real [not null]
+  water_price real [not null]
+  electricity_price real [not null]
+  status varchar // available, occupied, reserved, maintenance
+  facilities text
+  description text
+  cover_image text
+  images text
+  created_at timestamp
+}
+
+Table contracts {
+  id integer [primary key]
+  tenant_id integer [not null]
+  room_id integer [not null]
+  start_date date [not null]
+  end_date date [not null]
+  rent_amount real [not null]
+  deposit_amount real [not null]
+  status varchar // active, completed, terminated
+  guarantor_name varchar
+  contract_note varchar
+  document text
+}
+
+Table utility_bills {
+  id integer [primary key]
+  contract_id integer [not null]
+  water_usage real [not null]
+  electricity_usage real [not null]
+  water_price real [not null]
+  electricity_price real [not null]
+  total_amount real [not null]
+  billing_date date [not null]
+  status varchar // pending, paid, failed, unpaid
+}
+
+Table bookings {
+  id integer [primary key]
+  room_id integer [not null]
+  name varchar [not null]
+  phone varchar [not null]
+  email varchar [not null]
+  check_in_date date [not null]
+  duration integer [not null]
+  special_requests varchar
+  status varchar // pending, confirmed, cancelled, completed
+  created_at timestamp
+}
+
+Table payments {
+  id integer [primary key]
+  contract_id integer [not null]
+  amount real [not null]
+  slipImage text
+  payment_date date [not null]
+  method varchar // cash, bank_transfer, credit_card
+  status varchar // completed, pending, failed
+}
+
+Table maintenance_requests {
+  id integer [primary key]
+  room_id integer [not null]
+  description varchar [not null]
+  status varchar // pending, in_progress, completed
+  reported_date timestamp
+  resolved_date timestamp
+  technician varchar
+}
+
+Table reports {
+  id integer [primary key]
+  title varchar [not null]
+  description varchar [not null]
+  category varchar // financial, room, maintenance
+  resolved_status varchar // pending, resolved
+  created_at timestamp
+}
+
+Table notifications {
+  id integer [primary key]
+  user_id integer [not null]
+  type varchar // payment_due, contract_expiry, maintenance_update
+  message varchar [not null]
+  status varchar // unread, read
+  created_at timestamp
+}
+
+Table checkins {
+  id integer [primary key]
+  tenant_name varchar [not null]
+  contract_id varchar [not null]
+  water_meter real [not null]
+  electricity_meter real [not null]
+  keycard_delivered boolean
+  asset_note text
+  rules_acknowledged boolean
+  property_condition text
+  room_photos text
+  handover_note text
+  created_at timestamp
+}
+
+Table checkouts {
+  id integer [primary key]
+  contract_id integer [not null]
+  inspection_date date [not null]
+  water_meter real
+  electricity_meter real
+  damage_note text
+  outstanding_costs real
+  refund_note text
+  deduction real
+  total_refund real
+  created_at timestamp
+}
+
+Table backups {
+  id integer [primary key]
+  table_name varchar [not null]
+  data text [not null]
+  deleted_at timestamp
+}
+
+// === Relationships ===
+
+Ref: tenants.user_id > users.id
+
+Ref: contracts.tenant_id > tenants.id
+Ref: contracts.room_id > rooms.id
+
+Ref: utility_bills.contract_id > contracts.id
+
+Ref: bookings.room_id > rooms.id
+
+Ref: payments.contract_id > contracts.id
+
+Ref: maintenance_requests.room_id > rooms.id
+
+Ref: notifications.user_id > users.id
+
+Ref: checkins.contract_id > contracts.id
+
+Ref: checkouts.contract_id > contracts.id
+
+
+https://dbdiagram.io/d/Rorganize-67e5bce54f7afba1847e6d8f
