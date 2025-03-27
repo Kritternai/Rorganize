@@ -162,6 +162,41 @@ app.put("/api/tenants/:id", authenticateToken, upload.any(), (req, res) => {
     }
   );
 });
+/**
+ * API ข้อมูลสรุปการเงินสำหรับแดชบอร์ด
+ * GET /api/admin/financial-summary
+ * 
+ * Headers: Authorization (JWT)
+ */
+app.get("/api/admin/financial-summary", authenticateToken, (req, res) => {
+  if (req.user.role !== "admin") return res.status(403).json({ error: "Unauthorized" });
+
+  db.get(`
+    SELECT 
+      -- รายได้ค่าเช่า = ผลรวม rent_amount จาก contracts ที่สถานะ active
+      IFNULL((SELECT SUM(rent_amount) FROM contracts WHERE status = 'active'), 0) AS rent_income,
+      
+      -- รายได้ค่าน้ำ-ไฟ = ผลรวมจาก utility_bills
+      IFNULL((SELECT SUM(water_usage * water_price + electricity_usage * electricity_price) FROM utility_bills), 0) AS utility_income,
+      
+      -- รายได้ค่าบริการอื่นๆ (จำลองว่า 500 บาทต่อบิล)
+      IFNULL((SELECT COUNT(*) * 500 FROM utility_bills), 0) AS service_income,
+      
+      -- ยอดค้างชำระรวม = บิลที่ยังไม่ได้ชำระ
+      IFNULL((SELECT SUM(total_amount) FROM utility_bills WHERE status != 'paid'), 0) AS total_due,
+      
+      -- เงินประกันรวม = ผลรวม deposit_amount จาก contracts ที่สถานะ active
+      IFNULL((SELECT SUM(deposit_amount) FROM contracts WHERE status = 'active'), 0) AS total_deposit
+  `, [], (err, result) => {
+    if (err) {
+      console.error("❌ Error fetching dashboard financial summary:", err.message);
+      return res.status(500).json({ error: "ไม่สามารถโหลดข้อมูลการเงินได้" });
+    }
+
+    res.json(result);
+  });
+});
+
 // ===================================================
 // User Authentication APIs
 // ===================================================
@@ -852,7 +887,13 @@ app.get("/api/admin/dashboard", authenticateToken, (req, res) => {
       (SELECT COUNT(*) FROM users) AS user_count, 
       (SELECT COUNT(*) FROM rooms WHERE status='available') AS available_rooms, 
       (SELECT COUNT(*) FROM rooms WHERE status='occupied') AS occupied_rooms,
-      (SELECT COUNT(*) FROM rooms) AS total_rooms
+      (SELECT COUNT(*) FROM rooms) AS total_rooms,
+      ROUND(
+        CAST((SELECT COUNT(*) FROM rooms WHERE status='occupied') AS REAL) 
+        / 
+        (SELECT COUNT(*) FROM rooms) * 100, 
+        2
+      ) AS occupancy_rate
     `,
     [],
     (err, stats) => {

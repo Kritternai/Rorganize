@@ -114,21 +114,28 @@ const getFacilityIcon = (facility) => {
   return (
     <div className="font-[Prompt] bg-gradient-to-b from-blue-50 to-white min-h-screen">
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
-      {/* Navbar */}
-      <nav className="sticky top-0 bg-white shadow-md z-50 backdrop-blur-md bg-white/90">
+{/* Navbar */}
+      <nav className="sticky top-0 bg-white/90 backdrop-blur-md shadow-md z-50 transition-all duration-300">
         <div className="container mx-auto flex justify-between items-center py-4 px-6">
-          <Link to="/" className="text-3xl font-bold text-blue-700 hover:text-blue-800 transition">
-            Rorganize
+          <Link 
+            to="/" 
+            className="text-3xl font-bold text-blue-600 hover:text-blue-800 transition-colors duration-300 flex items-center gap-2"
+          >
+            The Luxe
           </Link>
-          <ul className="hidden md:flex gap-8 items-center">
-            <Link to="/" className="text-gray-700 hover:text-blue-600 transition">หน้าหลัก</Link>
-            <Link to="/rooms" className="text-gray-700 hover:text-blue-600 transition">ห้องพัก</Link>
-            <Link to="/contact" className="text-gray-700 hover:text-blue-600 transition">ติดต่อเรา</Link>
-            <Link to="/booking" className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg transition duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1">
-              จองห้องพัก
+          <ul className="flex gap-5 items-center">
+            <Link to="/" className={`nav-link ${location.pathname === "/" ? "text-blue-600 font-semibold" : ""}`}>หน้าหลัก</Link>
+            <Link to="/rooms" className={`nav-link ${location.pathname === "/rooms" ? "text-blue-600 font-semibold" : ""}`}>ห้องพัก</Link>
+            <Link to="/contact" className={`nav-link ${location.pathname === "/contact" ? "text-blue-600 font-semibold" : ""}`}>ติดต่อเรา</Link>
+            <Link 
+              to="/login/user" 
+              className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 
+              transform hover:-translate-y-0.5 transition-all duration-300 
+              shadow-md hover:shadow-lg flex items-center gap-2"
+            >
+              เข้าสู่ระบบ
             </Link>
           </ul>
-          {/* Mobile menu button would go here */}
         </div>
       </nav>
 

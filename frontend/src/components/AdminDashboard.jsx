@@ -207,13 +207,36 @@ const AdminDashboard = ({ token }) => {
                 </div>
               ))}
             </div>
+            {/* Financial Summary Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white shadow-md rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">📅 รายได้ค่าเช่าประจำเดือน</h3>
+              <p className="text-3xl font-bold text-blue-600">฿{dashboardData?.rent_income?.toLocaleString() || 0}</p>
+              </div>
+              <div className="bg-white shadow-md rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">💧 รายได้ค่าน้ำ-ไฟ</h3>
+              <p className="text-3xl font-bold text-blue-600">฿{dashboardData?.utility_income?.toLocaleString() || 0}</p>
+              </div>
+              <div className="bg-white shadow-md rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">💼 รายได้ค่าบริการอื่นๆ</h3>
+              <p className="text-3xl font-bold text-blue-600">฿{dashboardData?.service_income?.toLocaleString() || 0}</p>
+              </div>
+              <div className="bg-white shadow-md rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">❗ ยอดค้างชำระรวม</h3>
+              <p className="text-3xl font-bold text-red-500">฿{dashboardData?.total_due?.toLocaleString() || 0}</p>
+              </div>
+              <div className="bg-white shadow-md rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">💰 เงินประกันรวม</h3>
+              <p className="text-3xl font-bold text-green-500">฿{dashboardData?.total_deposit?.toLocaleString() || 0}</p>
+              </div>
+            </div>
 
             {/* ส่วนของกราฟ */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* กราฟแท่งรายได้ */}
               <div className="bg-white shadow-md rounded-xl p-6 transition-all duration-300 hover:shadow-lg">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-gray-800">📈 รายได้ย้อนหลัง 12 เดือน</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">📈 กราฟรายได้ย้อนหลัง 12 เดือน</h3>
                   <div className="text-sm text-gray-500 px-3 py-1 bg-blue-50 rounded-full">+12.5%</div>
                 </div>
                 <div className="w-full h-64">
