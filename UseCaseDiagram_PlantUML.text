@@ -1,0 +1,64 @@
+@startuml
+left to right direction
+skinparam usecase {
+  BackgroundColor #f9dbbb
+  BorderColor black
+}
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+
+rectangle "Rorganize System" {
+
+  ' === Actors ===
+  actor "Guest" as Guest
+  actor "Tenant" as Tenant
+  actor "Admin" as Admin
+
+  ' === Guest Actions ===
+  Guest --> (Browse Rooms) : search
+  Guest --> (Make Booking)
+  (Make Booking) <-- (Cancel Booking) : <<extend>> if needed
+
+  ' === Tenant Actions ===
+  Tenant --> (Login)
+  Tenant --> (View Dashboard)
+  Tenant --> (View Room Details)
+  Tenant --> (View Contract)
+  Tenant --> (View Utility Bills)
+  Tenant --> (Upload Payment Slip)
+  Tenant --> (View Payment Status)
+  Tenant --> (Submit Maintenance Request)
+  Tenant --> (View Notifications)
+  Tenant --> (Request Checkout)
+  (View Utility Bills) <-- (Pay Utility Bills) : <<extend>> if unpaid
+  (View Contract) <-- (Download Contract PDF) : <<extend>>
+  (Request Checkout) <-- (Acknowledge Rules) : <<extend>> before submit
+  (View Utility Bills) <-- (View Rent Invoice) : <<extend>>
+
+  ' === Admin Actions ===
+  Admin --> (Login)
+  Admin --> (Manage Users)
+  Admin --> (Manage Rooms)
+  Admin --> (View Room Status)
+  Admin --> (View Booking List)
+  Admin --> (Update Booking Status)
+  Admin --> (Manage Tenants)
+  Admin --> (Create/Edit Contracts)
+  Admin --> (Perform Check-in)
+  Admin --> (Perform Checkout)
+  Admin --> (Room Inspection)
+  Admin --> (Generate Utility Bills)
+  Admin --> (Verify Payments)
+  Admin --> (Update Payment Status)
+  Admin --> (View Reports)
+  Admin --> (Send Notifications)
+
+  ' === Extensions ===
+  (Perform Checkout) <-- (Delete Contract Data) : <<extend>> after checkout
+  (Generate Utility Bills) <-- (Add Extra Charges) : <<extend>> if needed
+  (Update Payment Status) <-- (Mark Bill as Paid) : <<extend>>
+  (Room Inspection) <-- (Upload Room Photos) : <<extend>>
+  (Send Notifications) <-- (Auto Reminder) : <<extend>> on due
+
+}
+@enduml
