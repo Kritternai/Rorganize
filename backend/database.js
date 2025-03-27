@@ -100,7 +100,7 @@ db.run(`
       electricity_price REAL NOT NULL,
       total_amount REAL NOT NULL,
       billing_date DATE NOT NULL,
-      status TEXT DEFAULT 'pending' COLLATE NOCASE CHECK(status IN ('pending', 'paid')),
+      status TEXT DEFAULT 'pending' COLLATE NOCASE CHECK(status IN ('pending', 'paid', 'failed', 'unpaid')),
       FOREIGN KEY (contract_id) REFERENCES contracts(id)
     )
   `);
@@ -131,7 +131,7 @@ db.run(`
       slipImage TEXT,
       payment_date DATE NOT NULL,
       method TEXT NOT NULL COLLATE NOCASE CHECK(method IN ('cash', 'bank_transfer', 'credit_card')),
-      status TEXT DEFAULT 'completed' COLLATE NOCASE CHECK(status IN ('completed', 'pending', 'failed')),
+      status TEXT DEFAULT 'pending' COLLATE NOCASE CHECK(status IN ('completed', 'pending', 'failed')),
       FOREIGN KEY (contract_id) REFERENCES contracts(id)
     )
   `);

@@ -33,6 +33,7 @@ import Reports from "./components/Reports";
 import Settings from "./components/settings.jsx";
 import UserLogin from "./components/UserLogin";
 import UserDashboard from "./components/UserDashboard.jsx";
+import AdminPaymentsPage from "./components/AdminPaymentsPage.jsx";
 
 function App() {
   // ✅ เก็บ Token ของ Admin ใน localStorage
@@ -83,6 +84,7 @@ function App() {
     <Route path="/admin/settings" element={<Settings />} />
     <Route path="/login/user" element={<UserLogin />} />
     <Route path="/user/dashboard" element={<UserDashboard />} />
+    <Route path="/admin/utilities" element={<AdminPaymentsPage />} />
   </Routes>
 </Router>
   );

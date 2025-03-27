@@ -91,11 +91,11 @@ const Payments = () => {
 
   const submitBill = async () => {
     try {
-      const payload = {
-        contract_id: selectedContract.id,
-        water_usage: parseFloat(billForm.water_usage) || 0,
-        electricity_usage: parseFloat(billForm.electricity_usage) || 0,
-      };
+    const payload = {
+      contract_id: selectedContract.id,
+      water_usage: parseFloat(billForm.water_usage) || 0,
+      electricity_usage: parseFloat(billForm.electricity_usage) || 0
+    };
 
       if (selectedBill) {
         await axios.put(`http://localhost:3001/api/utility-bills/${selectedBill.id}`, payload, {

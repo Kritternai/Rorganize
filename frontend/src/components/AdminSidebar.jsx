@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutGrid, Home, FileText, Users, ClipboardList, Settings, LogOut,
   Calendar, BarChart, ChevronDown, ChevronRight, Menu, Building, Key, CreditCard
@@ -61,20 +60,13 @@ const AdminSidebar = ({ children }) => {
         )}
       </button>
 
-      <AnimatePresence>
-        {((openMenu === id && !isCollapsed) || (isCollapsed && isActiveMenu)) && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className={`space-y-1 mt-1 overflow-hidden
-              ${isCollapsed ? "absolute left-20 top-0 bg-white shadow-lg rounded-lg p-3 min-w-40 z-20" : "pl-10"}`}
-          >
-            {children}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {((openMenu === id && !isCollapsed) || (isCollapsed && isActiveMenu)) && (
+        <div className={`space-y-1 mt-1 overflow-hidden
+          ${isCollapsed ? "absolute left-20 top-0 bg-white shadow-lg rounded-lg p-3 min-w-40 z-20" : "pl-10"}`}
+        >
+          {children}
+        </div>
+      )}
     </div>
   );
 
@@ -91,14 +83,13 @@ const AdminSidebar = ({ children }) => {
   return (
     <div className="flex h-screen font-['Prompt']">
       {/* Sidebar */}
-      <motion.div 
+      <div 
         className={`bg-white shadow-lg h-screen fixed top-0 left-0 z-10
         flex flex-col justify-between`}
-        animate={{ 
+        style={{ 
           width: isCollapsed ? 80 : 288,
           padding: isCollapsed ? 12 : 16
         }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
       >
         {/* Logo + Toggle Button */}
         <div className={`flex items-center ${isCollapsed ? "justify-center" : "justify-between"} mb-8`}>
@@ -171,8 +162,8 @@ const AdminSidebar = ({ children }) => {
             label="การเงินและบริการ" 
             isActiveMenu={isSubmenuActive("/admin/payments") || isSubmenuActive("/admin/utilities")}
           >
-            <SubMenuItem to="/admin/payments" label="ค่าเช่าและบริการ" />
-            <SubMenuItem to="/admin/utilities" label="ค่าสาธารณูปโภค" />
+            <SubMenuItem to="/admin/payments" label="แจ้งค่าสาธารณูปโภค" />
+            <SubMenuItem to="/admin/utilities" label="ตรวจสอบการโอนเงิน" />
           </DropdownMenu>
 
           {/* รายงาน */}
@@ -191,42 +182,41 @@ const AdminSidebar = ({ children }) => {
             isActiveItem={isActive("/admin/calendar")}
           />
 
-          {/* ตั้งค่า */}
+          {/* ตั้งค่าผู้ใช้งาน */}
           <MenuItem 
             to="/admin/settings" 
             icon={Settings} 
-            label="ตั้งค่า"
+            label="ตั้งค่าผู้ใช้งาน"
             isActiveItem={isActive("/admin/settings")}
           />
         </nav>
 
         {/* Logout Button */}
-        <motion.button 
+        <button 
           onClick={handleLogout} 
           className="flex items-center w-full rounded-lg 
             bg-red-500 text-white hover:bg-red-600 transition-colors mt-auto"
-          animate={{ 
+          style={{ 
             justifyContent: isCollapsed ? "center" : "flex-start",
             padding: isCollapsed ? 16 : 12
           }}
         >
           <LogOut size={isCollapsed ? 24 : 20} />
           {!isCollapsed && <span className="font-medium ml-3">ออกจากระบบ</span>}
-        </motion.button>
-      </motion.div>
+        </button>
+      </div>
 
       {/* Main Content */}
-      <motion.div 
+      <div 
         className="flex-1"
-        animate={{ 
+        style={{ 
           marginLeft: isCollapsed ? 80 : 288
         }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
       >
         <main className="p-6">
           {children}
         </main>
-      </motion.div>
+      </div>
     </div>
   );
 };

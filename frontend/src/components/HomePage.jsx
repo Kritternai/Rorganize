@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import AOS from "aos";
@@ -56,6 +57,7 @@ const testimonials = [
 ];
 
 const HomePage = () => {
+  const location = useLocation();
   const banners = [banner1, banner2];
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -87,23 +89,34 @@ const HomePage = () => {
   return (
     <div className="font-[Prompt] bg-gradient-to-b from-white to-blue-50 text-gray-800 scroll-smooth">
       {/* Navbar */}
-      <nav className="sticky top-0 bg-white shadow-md z-50 transition-all duration-300">
+      <nav className="sticky top-0 bg-white/90 backdrop-blur-md shadow-md z-50 transition-all duration-300">
         <div className="container mx-auto flex justify-between items-center py-4 px-6">
-          <Link to="/" className="text-3xl font-bold text-blue-700 hover:text-blue-900 transition-colors duration-300">Rorganize</Link>
-          <ul className="flex gap-6 items-center text-sm md:text-base">
-            <Link to="/" className="text-blue-700 font-medium relative group">
-              หน้าหลัก
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-700 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
-            </Link>
-            <Link to="/rooms" className="text-gray-700 hover:text-blue-700 relative group">
-              ห้องพัก
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-700 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
-            </Link>
-            <Link to="/contact" className="text-gray-700 hover:text-blue-700 relative group">
-              ติดต่อเรา
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-700 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
-            </Link>
-            <Link to="/login/user" className="bg-blue-700 text-white px-5 py-2 rounded-lg hover:bg-blue-800 transform hover:-translate-y-0.5 transition-all duration-300 shadow-md hover:shadow-lg">
+          <Link 
+            to="/" 
+            className="text-3xl font-bold text-blue-600 hover:text-blue-800 transition-colors duration-300 flex items-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            The Luxe
+          </Link>
+          <ul className="flex gap-5 items-center">
+            <Link to="/" className={`nav-link ${location.pathname === "/" ? "text-blue-600 font-semibold" : ""}`}>หน้าหลัก</Link>
+            <Link to="/rooms" className={`nav-link ${location.pathname === "/rooms" ? "text-blue-600 font-semibold" : ""}`}>ห้องพัก</Link>
+            <Link to="/contact" className={`nav-link ${location.pathname === "/contact" ? "text-blue-600 font-semibold" : ""}`}>ติดต่อเรา</Link>
+            <Link 
+              to="/login/user" 
+              className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 
+              transform hover:-translate-y-0.5 transition-all duration-300 
+              shadow-md hover:shadow-lg flex items-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
               เข้าสู่ระบบ
             </Link>
           </ul>
@@ -119,7 +132,7 @@ const HomePage = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/80" />
         <div className={`absolute inset-0 flex flex-col justify-center items-center text-center text-white px-4 ${isFirstLoad ? "opacity-0 animate-fadeIn" : "opacity-100"}`}>
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg">ยินดีต้อนรับสู่ Rorganize</h1>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg">ยินดีต้อนรับสู่ The Luxe</h1>
           <p className="text-lg md:text-xl mb-6 max-w-2xl drop-shadow">ห้องพักหรูใจกลางเมือง บริการเหนือระดับ สำหรับคุณ</p>
           <div className="flex gap-4">
             <Link to="/rooms" className="bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all">สำรวจห้องพัก</Link>
@@ -275,8 +288,8 @@ const HomePage = () => {
       {/* Minimal Footer */}
       <footer className="bg-blue-900 text-blue-100 text-xs py-6">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center text-center sm:text-left gap-2">
-          <p>Rorganize – ที่พักหรูสำหรับชีวิตเมืองระดับพรีเมียม</p>
-          <p className="text-[11px] text-blue-300">&copy; {new Date().getFullYear()} Rorganize. All rights reserved.</p>
+          <p>The Luxe – ที่พักหรูสำหรับชีวิตเมืองระดับพรีเมียม</p>
+          <p className="text-[11px] text-blue-300">&copy; {new Date().getFullYear()} The Luxe. All rights reserved.</p>
         </div>
       </footer>
     </div>

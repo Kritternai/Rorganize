@@ -78,11 +78,11 @@ const AddRoom = ({ token }) => {
         newRoom.images.forEach((img) => {
           if (img) formData.append("images", img);
         });
-      } else if (key === "facilities") {
-        newRoom.facilities.forEach((item) => formData.append("facilities", item));
-      } else {
+    } else if (key === "facilities") {
+        formData.append("facilities", JSON.stringify(newRoom.facilities));
+    } else {
         formData.append(key, newRoom[key]);
-      }
+    }
     });
   
     try {
@@ -93,6 +93,7 @@ const AddRoom = ({ token }) => {
       navigate("/admin", { state: { message: "✅ เพิ่มห้องพักเรียบร้อยแล้ว!" } });
     } catch (error) {
       console.error("❌ เกิดข้อผิดพลาด:", error);
+      console.error("❌ รายละเอียด:", error.response?.data || error.message);
       alert("❌ เกิดข้อผิดพลาดในการเพิ่มห้องพัก");
     } finally {
       setLoading(false);

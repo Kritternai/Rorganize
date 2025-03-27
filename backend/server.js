@@ -87,7 +87,7 @@ app.post("/api/utility-bills", authenticateToken, (req, res) => {
         contract_id, water_usage, electricity_usage,
         water_price, electricity_price, total_amount,
         billing_date, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'unpaid')
     `, [
       contract_id, water, electricity,
       water_price, electricity_price, total_amount,
@@ -253,13 +253,90 @@ app.post("/api/login", (req, res) => {
   });
 });
 
+// New API endpoint: Get merged user dashboard data
+app.get("/api/user/dashboard", authenticateToken, (req, res) => {
+  const userId = req.user.id;
+
+  db.get(`
+    SELECT 
+      u.username, 
+      t.id AS tenant_id, t.fullname, t.phone, t.email,
+      r.id AS room_id, r.room_number, r.floor, r.type, r.rent_price, r.water_price, r.electricity_price,
+      c.id AS contract_id, c.start_date, c.end_date, c.status AS contract_status,
+      ub.water_usage, ub.electricity_usage, ub.water_price AS bill_water_price, ub.electricity_price AS bill_electricity_price,
+      ub.total_amount, ub.billing_date, ub.status AS bill_status
+    FROM users u
+    JOIN tenants t ON t.user_id = u.id
+    JOIN contracts c ON c.tenant_id = t.id
+    JOIN rooms r ON c.room_id = r.id
+    LEFT JOIN utility_bills ub ON ub.contract_id = c.id
+    WHERE u.id = ?
+    ORDER BY ub.billing_date DESC
+    LIMIT 1
+  `, [userId], (err, data) => {
+    if (err) {
+      console.error("❌ ไม่สามารถดึงข้อมูล Dashboard:", err.message);
+      return res.status(500).json({ error: "❌ ไม่สามารถโหลดข้อมูลได้" });
+    }
+    if (!data) return res.status(404).json({ error: "ไม่พบข้อมูลผู้เช่าหรือสัญญา" });
+
+    res.json(data);
+  });
+});
+
 // ===================================================
 // Room Management APIs
 // ===================================================
 // ดึงข้อมูลการชำระเงินทั้งหมด
 app.get("/api/payments", authenticateToken, (req, res) => {
   db.all("SELECT * FROM payments ORDER BY payment_date DESC", [], (err, rows) => {
-    if (err) return res.status(500).json({ error: "ดึงข้อมูลชำระเงินล้มเหลว" });
+    if (err) return res.status(500).json({ error: "ดึงข้อมูลการชำระเงินล้มเหลว" });
+    res.json(rows);
+  });
+});
+
+app.put("/api/payments/:id/status", authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!["completed", "pending", "failed"].includes(status)) {
+    return res.status(400).json({ error: "สถานะไม่ถูกต้อง" });
+  }
+
+  db.run("UPDATE payments SET status = ? WHERE id = ?", [status, id], function (err) {
+    if (err) {
+      console.error("❌ ไม่สามารถอัปเดตสถานะการชำระเงิน:", err.message);
+      return res.status(500).json({ error: "❌ อัปเดตสถานะไม่สำเร็จ" });
+    }
+
+    // อัปเดตสถานะใน utility_bills ด้วย
+    db.run("UPDATE utility_bills SET status = ? WHERE contract_id = (SELECT contract_id FROM payments WHERE id = ?)", [status === 'completed' ? 'paid' : 'pending', id], (err2) => {
+      if (err2) {
+        console.error("❌ ไม่สามารถอัปเดตสถานะบิล:", err2.message);
+        return res.status(500).json({ error: "❌ อัปเดตสถานะบิลไม่สำเร็จ" });
+      }
+
+      res.json({ message: "✅ อัปเดตสถานะสำเร็จ" });
+    });
+  });
+});
+
+// ✅ ดึงข้อมูลการชำระเงิน พร้อมข้อมูลห้องและผู้เช่า
+app.get("/api/payments/details", authenticateToken, (req, res) => {
+  db.all(`
+    SELECT 
+      p.*, 
+      c.room_id, r.room_number, t.fullname AS tenant_name
+    FROM payments p
+    LEFT JOIN contracts c ON p.contract_id = c.id
+    LEFT JOIN rooms r ON c.room_id = r.id
+    LEFT JOIN tenants t ON c.tenant_id = t.id
+    ORDER BY p.payment_date DESC
+  `, [], (err, rows) => {
+    if (err) {
+      console.error("❌ ไม่สามารถดึงข้อมูลการชำระเงิน:", err.message);
+      return res.status(500).json({ error: "❌ ไม่สามารถดึงข้อมูลการชำระเงินได้" });
+    }
     res.json(rows);
   });
 });
@@ -1160,11 +1237,12 @@ app.get("/api/user/dashboard", authenticateToken, (req, res) => {
 
   const query = `
     SELECT 
-      c.*, 
+      c.id AS contract_id,
       r.room_number, r.type, r.floor, r.size, r.rent_price, r.status AS room_status,
       t.fullname, t.phone, t.vehicle_info,
       ub.water_usage, ub.electricity_usage, ub.total_amount, ub.status AS bill_status, ub.billing_date,
-      r.water_price, r.electricity_price
+      r.water_price, r.electricity_price,
+      c.start_date, c.end_date, c.status AS contract_status
     FROM users u
     JOIN tenants t ON t.user_id = u.id
     JOIN contracts c ON c.tenant_id = t.id
@@ -1213,7 +1291,7 @@ app.post("/api/payments", authenticateToken, upload.single("slip"), (req, res) =
 
   db.run(`
     INSERT INTO payments (contract_id, amount, slipImage, payment_date, method, status)
-    VALUES (?, ?, ?, ?, ?, 'completed')
+    VALUES (?, ?, ?, ?, ?, 'pending')
   `, [contract_id, amount, slipImage, payment_date, method], function (err) {
     if (err) {
       console.error("❌ ชำระเงินไม่สำเร็จ:", err.message);
@@ -1221,6 +1299,31 @@ app.post("/api/payments", authenticateToken, upload.single("slip"), (req, res) =
     }
 
     res.status(201).json({ message: "✅ บันทึกการชำระเงินสำเร็จ", id: this.lastID });
+  });
+});
+
+
+/**
+ * API อัปเดตสถานะของบิลค่าน้ำ-ค่าไฟ
+ * PUT /api/utility-bills/:id/status
+ * 
+ * Headers: Authorization (JWT)
+ * Body: { status }
+ */
+app.put("/api/utility-bills/:id/status", authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!["pending", "paid"].includes(status)) {
+    return res.status(400).json({ error: "สถานะไม่ถูกต้อง" });
+  }
+
+  db.run("UPDATE utility_bills SET status = ? WHERE id = ?", [status, id], function (err) {
+    if (err) {
+      console.error("❌ ไม่สามารถอัปเดตสถานะบิล:", err.message);
+      return res.status(500).json({ error: "❌ ไม่สามารถอัปเดตสถานะบิลได้" });
+    }
+    res.json({ message: "✅ อัปเดตสถานะบิลสำเร็จ" });
   });
 });
 
