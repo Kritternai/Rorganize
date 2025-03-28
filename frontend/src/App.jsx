@@ -30,7 +30,7 @@ import CheckOutManagement from "./components/CheckOutManagement";
 import TenantList from "./components/TenantList";
 import Payments from "./components/Payments.jsx";
 import Reports from "./components/Reports";
-import Settings from "./components/settings.jsx";
+import Settings from "./components/Settings.jsx";
 import UserLogin from "./components/UserLogin";
 import UserDashboard from "./components/UserDashboard.jsx";
 import AdminPaymentsPage from "./components/AdminPaymentsPage.jsx";
