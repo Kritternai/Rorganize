@@ -29,7 +29,7 @@
 ### 1. Clone โปรเจกต์ / Clone the project
 
 ```bash
-git clone https://github.com/yourusername/rorganize.git
+git clone https://github.com/Kritternai/Rorganize.git
 cd rorganize
 ```
 
